@@ -16,6 +16,8 @@ function treeToSql({ type, body, callee, arguments, name, raw, expression }) {
                     return `(${sqlArguments.join(' AND ')})`;
                 case 'OR':
                     return `(${sqlArguments.join(' OR ')})`;
+                case 'RECORD_ID':
+                    return `id`;
                 case 'IF':
                     return `CASE (${sqlArguments[0]}) 
                             WHEN TRUE THEN (${sqlArguments[1]})

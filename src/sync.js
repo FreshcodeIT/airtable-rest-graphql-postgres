@@ -2,8 +2,7 @@ const { Pool } = require('pg');
 const _ = require('lodash');
 const Airtable = require('airtable');
 const hash = require('object-hash');
-
-const tables = ['Property', 'Room', 'Landlord', 'Agent'];
+const { tables } = require('../config');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
@@ -44,6 +43,10 @@ function syncTable(table) {
 
         console.log(error);
     });
+}
+
+function syncRecord(table, id) {
+
 }
 
 syncTable('Property');

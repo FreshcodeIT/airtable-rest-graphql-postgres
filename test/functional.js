@@ -5,6 +5,8 @@ let should = chai.should();
 
 chai.use(chaiHttp);
 
+// TODO : we can call Airtable and Local endpoint and compare results - they should be the same(maybe except offset)
+
 describe('Books', () => {
     beforeEach((done) => {
         // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
@@ -14,6 +16,18 @@ describe('Books', () => {
         it('it should GET all the Properties', (done) => {
             chai.request(server)
                 .get(`/Property?maxRecords=3&view=Grid%20view&filterByFormula=AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))`)
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.a('array');
+                    res.body.length.should.be.eql(0);
+                    done();
+                });
+        });
+    });
+    describe('/GET All Properties', () => {
+        it('it should GET all the Properties', (done) => {
+            chai.request(server)
+                .get(`/Property`)
                 .end((err, res) => {
                     res.should.have.status(200);
                     res.body.should.be.a('array');
