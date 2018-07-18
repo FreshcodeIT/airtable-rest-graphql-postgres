@@ -1,15 +1,16 @@
 let express = require('express');
 let app = express();
 let bodyParser = require('body-parser');
-let port = 8080;
 let {listRecords, createRecord, retrieveRecord, deleteRecord, updateRecord} = require('./actions');
+let morgan = require('morgan');
+
+let port = 8080;
 
 app.use(bodyParser.json());                                     
 app.use(bodyParser.urlencoded({extended: true}));               
 app.use(bodyParser.text());                                    
 app.use(bodyParser.json({ type: 'application/json'}));  
-
-app.get("/", (req, res) => res.json({message: "Welcome to our Bookstore!"}));
+app.use(morgan('combined'));
 
 app.route("/:table")
     .get(listRecords)
