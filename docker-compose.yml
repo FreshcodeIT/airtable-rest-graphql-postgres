@@ -1,0 +1,14 @@
+version: '2'
+services:
+  web:
+    build: .
+    command: npm start
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://airtable@postgres/airtable
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: airtable
+      POSTGRES_DB: airtable

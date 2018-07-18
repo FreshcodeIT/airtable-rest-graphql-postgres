@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "airtable": "^0.5.6",
+    "esprima": "^4.0.1",
+    "express": "^4.16.3",
+    "lodash": "^1.2.0",
+    "object-hash": "^1.3.0",
+    "pg": "^7.4.3"
+  },
+  "scripts": {
+    "start": "node index.js"
+  }
+}
