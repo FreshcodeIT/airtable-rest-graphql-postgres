@@ -6,11 +6,11 @@ let morgan = require('morgan');
 
 let port = 8080;
 
+app.use(morgan('combined'));
 app.use(bodyParser.json());                                     
 app.use(bodyParser.urlencoded({extended: true}));               
 app.use(bodyParser.text());                                    
 app.use(bodyParser.json({ type: 'application/json'}));  
-app.use(morgan('combined'));
 
 app.route("/:table")
     .get(listRecords)

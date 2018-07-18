@@ -1,4 +1,4 @@
-const { Pool, Client } = require('pg');
+const { Pool } = require('pg');
 const _ = require('lodash');
 const Airtable = require('airtable');
 const hash = require('object-hash');

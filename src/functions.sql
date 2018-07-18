@@ -15,3 +15,9 @@ CREATE OR REPLACE FUNCTION ARRAYJOIN(data jsonb, separator text) RETURNS text
     LANGUAGE SQL
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;
+
+CREATE OR REPLACE FUNCTION FIND(stringToFind text, whereToSearch text,startFromPosition integer default 0) RETURNS integer 
+    AS $$ SELECT position(stringToFind in substring(whereToSearch from startFromPosition)) $$
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;

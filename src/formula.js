@@ -1,15 +1,16 @@
 const esprima = require('esprima');
+const _ = require('lodash');
 
 // TODO : allow only Aritable functions(can check by requesting list of functions from schema)
 
-function formulaToSql({ type, body, callee, arguments, name, raw, expression }) {
+function treeToSql({ type, body, callee, arguments, name, raw, expression }) {
     switch (type) {
         case 'Program':
-            return formulaToSql(_.last(body));
+            return treeToSql(_.last(body));
         case 'ExpressionStatement':
-            return formulaToSql(expression);
+            return treeToSql(expression);
         case 'CallExpression':
-            const sqlArguments = _.map(arguments, formulaToSql);
+            const sqlArguments = _.map(arguments, treeToSql);
             switch (callee.name) {
                 case 'AND':
                     return `(${sqlArguments.join(' AND ')})`;
@@ -24,8 +25,17 @@ function formulaToSql({ type, body, callee, arguments, name, raw, expression }) 
                     return `(${callee.name}(${sqlArguments.join(',')}))`;
             }
         case 'Identifier':
-            return `data->>'${name}'`;
+            return `data->'${name}'`;
         case 'Literal':
             return raw;
     }
 }
+
+function formulaToSql(formula) {
+    if (formula)
+        return `${treeToSql(esprima.parse(formula))}::boolean`;
+    else
+        return "TRUE";
+}
+
+module.exports = formulaToSql;
