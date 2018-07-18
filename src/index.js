@@ -81,3 +81,5 @@ function formulaToSql({ type, body, callee, arguments, name, raw, expression }) 
 }
 
 console.log(formulaToSql(tree));
+
+function processFind()
