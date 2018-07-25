@@ -1,39 +1,35 @@
 let chai = require('chai');
 let chaiHttp = require('chai-http');
 let server = require('../src/rest');
+let config = require('config');
+let sync = require('../src/sync');
 let should = chai.should();
+let _ = require('lodash');
 
 chai.use(chaiHttp);
 
 // TODO : we can call Airtable and Local endpoint and compare results - they should be the same(maybe except offset)
 
-describe('Books', () => {
-    beforeEach((done) => {
-        // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
-        done();
-    });
-    describe('/GET All Properties', () => {
-        it('it should GET all the Properties', (done) => {
-            chai.request(server)
-                .get(`/Property?maxRecords=3&view=Grid%20view&filterByFormula=AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))`)
-                .end((err, res) => {
-                    res.should.have.status(200);
-                    res.body.should.be.a('array');
-                    res.body.length.should.be.eql(0);
-                    done();
-                });
+function compareLocalAndRemote(url) {
+    return Promise
+        .all([
+            chai.request(server).get(url),
+            chai.request(`https://api.airtable.com/v0/${config.get('airtable.base')}`).get(url).set('Authorization', 'Bearer keymYek7PsWGf6j7i')
+        ])
+        .then(([local, airtable]) => {
+            local.body.records.should.be.deep.equal(airtable.body.records);
         });
+}
+
+describe('Books', () => {
+    beforeEach(async () => {
+        // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
+        await sync.init();
+        await sync.syncTableFromScratch('Property');
     });
     describe('/GET All Properties', () => {
         it('it should GET all the Properties', (done) => {
-            chai.request(server)
-                .get(`/Property`)
-                .end((err, res) => {
-                    res.should.have.status(200);
-                    res.body.should.be.a('array');
-                    res.body.length.should.be.eql(0);
-                    done();
-                });
+            compareLocalAndRemote(`/Property?maxRecords=3&view=Grid%20view&filterByFormula=AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))&sort[0][field]=Name&sort[0][direction]=asc`).then(done).catch(done);
         });
     });
     // describe('/POST book', () => {

@@ -7,6 +7,7 @@ services:
       - postgres
     environment:
       DATABASE_URL: postgres://airtable@postgres/airtable
+      NODE_ENV: test
   postgres:
     image: postgres:latest
     environment:

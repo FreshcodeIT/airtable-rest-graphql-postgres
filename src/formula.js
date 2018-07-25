@@ -27,7 +27,7 @@ function treeToSql({ type, body, callee, arguments, name, raw, expression }) {
                     return `(${callee.name}(${sqlArguments.join(',')}))`;
             }
         case 'Identifier':
-            return `data->'${name}'`;
+            return `fields->'${name}'`;
         case 'Literal':
             return raw;
     }
@@ -40,4 +40,12 @@ function formulaToSql(formula) {
         return "TRUE";
 }
 
-module.exports = formulaToSql;
+function sortToSql(fields) {
+    // TODO : add validation by fields
+    if (!fields || !fields.length)
+        return "id";
+    else
+        return _.map(fields, ({ field, direction }) => `fields->'${field}' ${direction}`).join(',');
+}
+
+module.exports = { formulaToSql, sortToSql };

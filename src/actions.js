@@ -1,7 +1,10 @@
 const { Pool } = require('pg');
-const formulaToSql = require('./formula');
-const { tables } = require('../config');
+const { formulaToSql, sortToSql } = require('./formula');
 const _ = require('lodash');
+const config = require('config');
+const JSON5 = require('json5');
+
+const tables = config.get('airtable.tables');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
@@ -17,9 +20,12 @@ async function listRecords(req, res) {
 
     const limit = parseInt(req.query.maxRecords) || 100;
     const filter = formulaToSql(req.query.filterByFormula);
-    console.log(`SELECT * FROM ${table} WHERE ${filter} LIMIT ${limit}`);
-    const result = await pool.query(`SELECT * FROM ${table} WHERE ${filter} LIMIT ${limit}`);
-    res.json({ records: result.rows });
+    const sort = sortToSql(req.query.sort);
+    // const sort = sortToSql(JSON5.parse(req.query.sort));
+    const query = `SELECT id,fields,created_time FROM ${table} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
+    console.log(query);
+    const result = await pool.query(query);
+    res.json({ records: _.map(result.rows, (row) => _.mapKeys(row, (v, k) => _.camelCase(k))) });
 }
 function createRecord() { }
 function retrieveRecord() { }
