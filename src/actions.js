@@ -14,8 +14,6 @@ const pool = new Pool({
 });
 
 async function listRecords(req, res) {
-    console.log('List records called' + JSON.stringify(req.params) + JSON.stringify(req.query));
-
     const table = req.params.table;
 
     if (!_.includes(tables, table))
@@ -37,8 +35,22 @@ async function createRecord(req, res) {
     res.json(result['_rawJson']);
 }
 
-function retrieveRecord() { }
-function deleteRecord() { }
+function retrieveRecord() {
+    const table = req.params.table;
+    const id = req.params.id;
+
+    if (!_.includes(tables, table))
+        throw new Error(`Table ${table} not available`);
+
+    const query = `SELECT id,fields,created_time FROM ${table} WHERE id=${id}`;
+    const result = await pool.query(query);
+    res.json(_.mapKeys(result.rows[0], (v, k) => _.camelCase(k)));
+}
+
+function deleteRecord() { 
+    
+}
+
 function updateRecord() {
 }
 
