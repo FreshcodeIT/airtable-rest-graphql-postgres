@@ -3,7 +3,7 @@ const _ = require('lodash');
 
 // TODO : allow only Aritable functions(can check by requesting list of functions from schema)
 
-function treeToSql({ type, body, callee, arguments, name, raw, expression }) {
+function treeToSql({ type, body, callee, arguments, name, raw, expression, operator, left, right}) {
     switch (type) {
         case 'Program':
             return treeToSql(_.last(body));
@@ -26,6 +26,14 @@ function treeToSql({ type, body, callee, arguments, name, raw, expression }) {
                 default:
                     return `(${callee.name}(${sqlArguments.join(',')}))`;
             }
+        case 'BinaryExpression':
+            switch (operator) {
+                case '==':
+                    return `((${treeToSql(left)})=(${treeToSql(right)}))`;
+                default:
+                    return `((${treeToSql(left)}) ${operator} (${treeToSql(right)}))`;
+            }
+            return;
         case 'Identifier':
             return `fields->'${name}'`;
         case 'Literal':
@@ -34,8 +42,12 @@ function treeToSql({ type, body, callee, arguments, name, raw, expression }) {
 }
 
 function formulaToSql(formula) {
-    if (formula)
+    if (formula) {
+        // TODO : create speicific parser for Airtable formulas
+        formula = formula.replace('=', '==');
+        console.log("Formula:" + formula);
         return `${treeToSql(esprima.parse(formula))}::boolean`;
+    }
     else
         return "TRUE";
 }

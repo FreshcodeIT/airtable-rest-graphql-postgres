@@ -18,10 +18,11 @@ async function createTable(table) {
 
 var base = new Airtable({ apiKey: config.get('airtable.apiKey') }).base(config.get('airtable.base'));
 
-function syncTable(table) {
+function syncTable(table, id) {
     return new Promise((resolve, reject) => {
         const allValues = [];
-        base(table).select({}).eachPage(function page(records, fetchNextPage) {
+        const specificId = id ? { filterByFormula: `RECORD_ID()='${id}'` } : {};
+        base(table).select(_.assign({}, specificId)).eachPage(function page(records, fetchNextPage) {
             records.forEach(function (record) {
                 allValues.push({
                     id: record.id,
@@ -55,13 +56,13 @@ function syncTable(table) {
     })
 }
 
-function syncRecord(table, id) {
-
-}
-
 async function syncTableFromScratch(table) {
     await pool.query(`DELETE FROM ${table}`);
     await syncTable(table);
 }
 
-module.exports = { init: () => Promise.all(config.get('airtable.tables').map(createTable)), syncTableFromScratch };
+module.exports = {
+    init: () => Promise.all(config.get('airtable.tables').map(createTable)),
+    syncTableFromScratch,
+    syncTable
+};
