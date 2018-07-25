@@ -35,7 +35,7 @@ async function createRecord(req, res) {
     res.json(result['_rawJson']);
 }
 
-function retrieveRecord() {
+async function retrieveRecord(req, res) {
     const table = req.params.table;
     const id = req.params.id;
 
@@ -51,7 +51,13 @@ function deleteRecord() {
     
 }
 
-function updateRecord() {
+async function updateRecord(req, res) {
+    const table = req.params.table;
+    const id = req.params.id;
+    const result = await base(table).update(id, req.body.fields);
+    console.log(result['_rawJson']);
+    await syncTable(table, id);
+    res.json(result['_rawJson']);
 }
 
 module.exports = { listRecords, createRecord, retrieveRecord, deleteRecord, updateRecord };

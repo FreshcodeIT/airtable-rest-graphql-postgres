@@ -8,7 +8,7 @@ let _ = require('lodash');
 
 chai.use(chaiHttp);
 
-// TODO : we can call Airtable and Local endpoint and compare results - they should be the same(maybe except offset)
+// TODO : use Airtable.js with custom endpoint
 // You can use https://codepen.io/airtable/full/rLKkYB to create proper Airtable API URL
 function selectAndCompareLocalAndRemote(url) {
     return Promise
@@ -18,6 +18,8 @@ function selectAndCompareLocalAndRemote(url) {
         ])
         .then(([local, airtable]) => {
             local.body.records.should.be.deep.equal(airtable.body.records);
+            chai.expect(local.body.records.length > 0).to.be.true;
+            return [local, airtable];
         });
 }
 
@@ -81,23 +83,17 @@ describe('Books', () => {
 
     //     });
     // });
-    // describe('/PUT/:id book', () => {
-    //     it('it should UPDATE a book given the id', (done) => {
-    //         let book = new Book({ title: "The Chronicles of Narnia", author: "C.S. Lewis", year: 1948, pages: 778 })
-    //         book.save((err, book) => {
-    //             chai.request(server)
-    //                 .put('/book/' + book.id)
-    //                 .send({ title: "The Chronicles of Narnia", author: "C.S. Lewis", year: 1950, pages: 778 })
-    //                 .end((err, res) => {
-    //                     res.should.have.status(200);
-    //                     res.body.should.be.a('object');
-    //                     res.body.should.have.property('message').eql('Book updated!');
-    //                     res.body.book.should.have.property('year').eql(1950);
-    //                     done();
-    //                 });
-    //         });
-    //     });
-    // });
+    describe('/PUT/:id book', () => {
+        it('it should UPDATE a book given the id', async () => {
+            const newName = "The Chronicles of Narnia" + (new Date());
+            // TODO : change City field and ensure that CityLookup is also changed
+            const changed = { fields: { Name: newName }};
+            const result = await chai.request(server).patch('/Property/rectjYQmyIofRmQ8J').send(changed);
+            const [local, airtable] = await selectAndCompareLocalAndRemote(`/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'rectjYQmyIofRmQ8J'`);
+            chai.expect(airtable.body.records[0].fields.Name == newName).to.be.true;
+            chai.expect(local.body.records[0].fields.Name == newName).to.be.true;
+        });
+    });
 
     // describe('/DELETE/:id book', () => {
     //     it('it should DELETE a book given the id', (done) => {
