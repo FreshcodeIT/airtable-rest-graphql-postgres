@@ -3,7 +3,7 @@
         "apiKey": "keymYek7PsWGf6j7i",
         "base": "appi7MJY9TJIqNNJj",
         "tables": [
-            "Property"
+            "Property", "City", "Feature"
         ]
     }
 }

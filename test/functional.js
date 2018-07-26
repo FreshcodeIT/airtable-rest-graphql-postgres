@@ -28,7 +28,7 @@ async function getSingleEntity(table, id) {
     return res.body;
 }
 
-describe('Books', function () {
+describe('Properties', function () {
     this.timeout(5000);
     before(async () => {
         // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
