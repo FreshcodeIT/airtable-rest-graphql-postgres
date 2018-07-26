@@ -23,8 +23,14 @@ function selectAndCompareLocalAndRemote(url) {
         });
 }
 
-describe('Books', () => {
-    beforeEach(async () => {
+async function getSingleEntity(table, id) {
+    const res = await chai.request(`https://api.airtable.com/v0/${config.get('airtable.base')}`).get(`/${table}/${id}`).set('Authorization', 'Bearer keymYek7PsWGf6j7i');
+    return res.body;
+}
+
+describe('Books', function () {
+    this.timeout(5000);
+    before(async () => {
         // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
         await sync.init();
         await sync.syncTableFromScratch('Property');
@@ -83,15 +89,23 @@ describe('Books', () => {
 
     //     });
     // });
-    describe('/PUT/:id book', () => {
-        it('it should UPDATE a book given the id', async () => {
-            const newName = "The Chronicles of Narnia" + (new Date());
-            // TODO : change City field and ensure that CityLookup is also changed
-            const changed = { fields: { Name: newName }};
-            const result = await chai.request(server).patch('/Property/rectjYQmyIofRmQ8J').send(changed);
-            const [local, airtable] = await selectAndCompareLocalAndRemote(`/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'rectjYQmyIofRmQ8J'`);
-            chai.expect(airtable.body.records[0].fields.Name == newName).to.be.true;
-            chai.expect(local.body.records[0].fields.Name == newName).to.be.true;
+    describe('/PATCH/:id property', () => {
+
+        const newName = "The Chronicles of Narnia" + (new Date());
+        const cities = { London: 'rec15jNSgn0MUMNxZ', Zaporozhye: 'recEu3Pa4VZ88nPKV' };
+        const id = 'rectjYQmyIofRmQ8J';
+
+        it('change Property name and City(CityLookup also should change)', async () => {
+            await chai.request(server).patch(`/Property/${id}`).send({ fields: { Name: newName, City: [cities.Zaporozhye] } });
+            const [localZp] = await selectAndCompareLocalAndRemote(`/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
+            chai.expect(localZp.body.records[0].fields.Name == newName).to.be.true;
+            chai.expect(localZp.body.records[0].fields.CityLookup[0] == 'Zaporozhye').to.be.true;
+        });
+
+        it('Change City one more time to ensure that Lookup field is also changed', async () => {
+            await chai.request(server).patch(`/Property/${id}`).send({ fields: { City: [cities.London] } });
+            const [localLondon] = await selectAndCompareLocalAndRemote(`/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
+            chai.expect(localLondon.body.records[0].fields.CityLookup[0] == 'London').to.be.true;
         });
     });
 
