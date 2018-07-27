@@ -77,7 +77,8 @@ async function processAndScheduleAllTables(base) {
     for (var i in tables) {
         await syncTable(base, tables[i]);
     }
-    setTimeout(processAndScheduleAllTables, 1000);
+    if (process.env.NODE_ENV === 'production')
+        setTimeout(() => processAndScheduleAllTables(base), 1000);
 }
 
 async function init() {
@@ -89,5 +90,6 @@ async function init() {
 module.exports = {
     init,
     syncTable,
-    registerOnChangeHandler
+    registerOnChangeHandler,
+    createTable
 };

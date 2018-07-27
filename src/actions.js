@@ -59,7 +59,7 @@ async function updateRecord(req, res) {
     const table = req.params.table;
     const id = req.params.id;
     const result = await base(table).update(id, req.body.fields);
-    await syncTable(table, id);
+    await syncTable(base, table, id);
     res.json(result['_rawJson']);
 }
 

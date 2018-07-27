@@ -2,7 +2,7 @@ version: '2'
 services:
   test:
     build: .
-    command: npm run test-backup
+    command: npm run test-in-docker
     depends_on:
       - postgres
     environment:

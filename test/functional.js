@@ -1,9 +1,10 @@
 let chai = require('chai');
 let chaiHttp = require('chai-http');
-let server = require('./rest');
 let config = require('config');
-let sync = require('../src/sync');
-let _ = require('lodash');
+
+let server = require('./rest');
+let {init} = require('../src/sync');
+let {clearPostgresTable} = require('./utils');
 
 chai.use(chaiHttp);
 
@@ -16,7 +17,7 @@ function selectAndCompareLocalAndRemote(url) {
             chai.request(`https://api.airtable.com/v0/${config.get('airtable.base')}`).get(url).set('Authorization', 'Bearer keymYek7PsWGf6j7i')
         ])
         .then(([local, airtable]) => {
-            local.body.records.should.be.deep.equal(airtable.body.records);
+            chai.expect(local.body.records).to.be.deep.equal(airtable.body.records);
             chai.expect(local.body.records.length > 0).to.be.true;
             return [local, airtable];
         });
@@ -31,8 +32,8 @@ describe('Properties', function () {
     this.timeout(5000);
     before(async () => {
         // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
-        await sync.init();
-        await sync.syncTableFromScratch('Property');
+        await clearPostgresTable('Property');
+        await init();
     });
     describe('/GET All Properties', () => {
         it('it should GET all the Properties', () => {
@@ -43,25 +44,17 @@ describe('Properties', function () {
         it('it should Post property which should arrive both in local and remote repository', async () => {
             let property = {
                 fields: {
-                    "Name": "330 Euston Road, London, UK",
-                    "Address": "330 Euston Road, London, UK",
+                    "Name": "Some property",
                     "City": [
-                        "rec15jNSgn0MUMNxZ"
+                      "rec15jNSgn0MUMNxZ"
                     ],
-                    "Type": "Room in a flat share",
-                    "NumberOfRooms": 5,
-                    "Postcode": "NW1 3BD",
-                    "Country": "United Kingdom",
-                    "House Description": "sdfsgdfg",
-                    "Communal Area description": "asdasd",
-                    "Landlord": [
-                        "recUgYptCwevSMb3M"
+                    "Features": [
+                      "recIm3W2cabO72d3J",
+                      "recHwdfhyLBqIVajX"
                     ],
-                    "Rooms": [
-                        "receYTXxx4ZGQEyqS"
-                    ],
-                    "Approve status": "to be approved"
-                }
+                    "Date": "2018-07-11",
+                    "Single select": "yes"
+                  }
             };
             const result = await chai.request(server).post('/Property').send(property);
             return selectAndCompareLocalAndRemote(`/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${result.body.id}'`);

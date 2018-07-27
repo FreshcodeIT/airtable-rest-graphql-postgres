@@ -11,8 +11,8 @@ function setupAirtableRest(app) {
     return app;
 }
 
-function onChangeHook(hook) {
+function onChange(hook) {
 
 }
 
-module.exports = { setupAirtableRest, onChangeHook };
+module.exports = { setupAirtableRest, onChange };
