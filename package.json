@@ -12,7 +12,8 @@
   "scripts": {
     "start": "node src/rest.js",
     "test": "docker-compose up --build",
-    "test-in-docker": "mocha"
+    "test-in-docker": "mocha",
+    "test-backup": "node test/backup.js"
   },
   "devDependencies": {
     "chai": "^4.1.2",

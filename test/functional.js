@@ -3,7 +3,6 @@ let chaiHttp = require('chai-http');
 let server = require('../src/rest');
 let config = require('config');
 let sync = require('../src/sync');
-let should = chai.should();
 let _ = require('lodash');
 
 chai.use(chaiHttp);

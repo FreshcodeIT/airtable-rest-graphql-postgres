@@ -1,28 +1,49 @@
 const { Pool } = require('pg');
 const Airtable = require('airtable');
-const {syncTableFromScratch} = require('./sync');
-
-var config = require('config');
-
-var base = new Airtable({ apiKey: config.get('airtable.apiKey') }).base(config.get('airtable.base'));
+const _ = require('lodash');
+const config = require('config');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
-/**
- * 
- */
 function cleanObjectFromFk(object, allIds) {
     return {
         id: object.id,
+        __tableName: object.__tableName,
         fields: _.mapValues(object.fields, (value) => {
-            if (_.isArray(value))
-                return _.without(value, allIds);
+            if (_.isArray(value)) {
+                if (_.every(value, _.isObject))
+                    return _.map(value, ({ url, filename }) => ({ url, filename }));
+                else
+                    return _.difference(value, allIds);
+            }
             else if (_.includes(allIds, value))
                 return null;
+            return value;
         })
     };
+}
+
+function replaceOldFKtoNewFK(fields, oldIdToNewMapping) {
+    return _.pickBy(_.mapValues(fields, (value) => {
+        if (_.isArray(value)) {
+            if (_.every(value, _.isObject))
+                return null;
+            else
+                return _.map(value, (val) => oldIdToNewMapping[val]);
+        }
+        else
+            return oldIdToNewMapping[value];
+    }));
+}
+
+async function getAllObjects(tables) {
+    const allObectsGrouped = await Promise.all(_.map(tables, async (table) => {
+        const rows = (await pool.query(`SELECT id,fields FROM ${table}`)).rows;
+        return _.map(rows, obj => _.assign({ __tableName: table }, obj));
+    }));
+    return _.flatten(allObectsGrouped);
 }
 
 /**
@@ -30,31 +51,41 @@ function cleanObjectFromFk(object, allIds) {
  * 1. Gather ID's of all objects in database
  * 2. Remove all mentions of this ID's using strict equality
  */
-async function getAllObjectsWithoutKeys(tables) {
-    const allObectsGrouped = await Promise.all(_.map(tables, async (table) => {
-        const rows = (await pool.query(`SELECT id,fields FROM ${table}`)).rows;
-        return _.map(rows, obj => _.assign({ __tableName: table }, obj));
-    }));
-    const allObjectsFlat = _.flatten(allObectsGrouped);
-    console.log(allObjectsFlat);
-    const allIds = _.map(allObjectsFlat, 'id');
-    return _.map(allObjectsFlat, (object) => cleanObjectFromFk(object, allIds));
+async function getAllObjectsWithoutKeys(allObjects) {
+    const allIds = _.map(allObjects, 'id');
+    return _.map(allObjects, (object) => cleanObjectFromFk(object, allIds));
+}
+
+async function restoreSinglePlainObject(base, excludeFields, obj) {
+    const { __tableName, fields, id } = obj;
+    try {
+        const newId = (await base(__tableName).create(_.omit(fields, excludeFields))).id;
+        return [id, newId];
+    } catch (e) {
+        if (e.error === 'INVALID_VALUE_FOR_COLUMN') {
+            // TODO : remove this hack when get proper metadata
+            const field = e.message.match(/Field (.*?) can not accept value/);
+            console.log("Computed:" + field[1]);
+            excludeFields.push(field[1]);
+            return restoreSinglePlainObject(base, excludeFields, obj);
+        }
+        console.log(obj);
+        console.log(e)
+    };
 }
 
 /**
  * Because we can't enforce Airtable to assign old ID's of the objects we should keep track of new generated id's and associate 
  * them with old id's to be able later recreate relations
  */
-async function restorePlainObjects(objectsWithoutFk) {
-    const oldIdToNewMapping = await Promise.all(_.map(objectsWithoutFk, async (obj) => {
-        const id = (await base(table).create(obj)).id;
-        return [obj.id, id];
-    }));
-    return _.fromPairs(oldIdToNewMapping);
+async function restorePlainObjects(base, objectsWithoutFk) {
+    const excludeFields = [];
+    const oldIdToNewMapping = await Promise.all(_.map(objectsWithoutFk, _.partial(restoreSinglePlainObject, base, excludeFields)));
+    return { oldIdToNewMapping: _.fromPairs(oldIdToNewMapping), excludeFields };
 }
 
-async function restoreRelations() {
-
+function restoreRelations(base, allObjects, { oldIdToNewMapping, excludeFields }) {
+    return Promise.all(_.map(allObjects, ({ __tableName, fields, id }) => base(__tableName).update(oldIdToNewMapping[id], replaceOldFKtoNewFK(_.omit(fields, excludeFields), oldIdToNewMapping))));
 }
 
 /**
@@ -66,9 +97,17 @@ async function restoreRelations() {
  * Also airtable have constraint for 5requests/sec and no batch insert or batch update API.
  * For free plan(1200 records) it can take (1200 / 5) / 60 = 4 minutes to restore full database once, and extra 4 minutes for restore foreign keys
  */
-function syncPostgresToAirtable(tables) {
-    const objectsWithoutFk = getAllObjectsWithoutKeys(tables);
-    const oldIdToNewMapping = restorePlainObjects(objectsWithoutFk);
-    console.log(oldIdToNewMapping);
-    restoreRelations();
+async function syncPostgresToAirtable(targetBase, tables) {
+    try {
+        var base = new Airtable({ apiKey: config.get('airtable.apiKey') }).base(targetBase);
+        const allObjects = await getAllObjects(tables);
+        const objectsWithoutFk = await getAllObjectsWithoutKeys(allObjects);
+        const plainObjectRestoreMetainfo = await restorePlainObjects(base, objectsWithoutFk);
+        console.log(plainObjectRestoreMetainfo);
+        await restoreRelations(base, allObjects, plainObjectRestoreMetainfo);
+    } catch (e) {
+        console.log(e);
+    }
 }
+
+module.exports = syncPostgresToAirtable;

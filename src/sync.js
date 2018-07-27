@@ -21,8 +21,8 @@ var base = new Airtable({ apiKey: config.get('airtable.apiKey') }).base(config.g
 function syncTable(table, id) {
     return new Promise((resolve, reject) => {
         const allValues = [];
-        const specificId = id ? { filterByFormula: `RECORD_ID()='${id}'` } : {};
-        base(table).select(_.assign({}, specificId)).eachPage(function page(records, fetchNextPage) {
+        const filter = id ? { filterByFormula: `RECORD_ID()='${id}'` } : {};
+        base(table).select(filter).eachPage(function page(records, fetchNextPage) {
             records.forEach(function (record) {
                 allValues.push({
                     id: record.id,
@@ -36,7 +36,7 @@ function syncTable(table, id) {
             if (error)
                 return reject(error);
 
-            const currentState = (await pool.query(`SELECT id,hash FROM Property`)).rows;
+            const currentState = (await pool.query(`SELECT id,hash FROM ${table}`)).rows;
             const added = _.differenceBy(allValues, currentState, 'id');
             const deleted = _.differenceBy(currentState, allValues, 'id');
             const changed = _(allValues)
@@ -45,11 +45,13 @@ function syncTable(table, id) {
                 .differenceBy(currentState, 'hash')
                 .value();
 
-            const addedP = added.map((record) => pool.query(`INSERT INTO Property VALUES ($1,$2,$3,$4)`, [record.id, record.fields, record.hash, record.createdTime]));
-            const deletedP = deleted.map(({ id }) => pool.query(`DELETE FROM Property WHERE id = $1`, [id]));
-            const changedP = changed.map(record => pool.query(`UPDATE Property SET fields=$1, hash=$2 WHERE id = $3`, [record.fields, record.hash, record.id]));
-
+            const addedP = added.map((record) => pool.query(`INSERT INTO ${table} VALUES ($1,$2,$3,$4)`, [record.id, record.fields, record.hash, record.createdTime]));
+            const deletedP = deleted.map(({ id }) => pool.query(`DELETE FROM ${table} WHERE id = $1`, [id]));
+            const changedP = changed.map(record => pool.query(`UPDATE ${table} SET fields=$1, hash=$2 WHERE id = $3`, [record.fields, record.hash, record.id]));
+            
             await Promise.all(_.flattenDeep([addedP, deletedP, changedP]));
+
+            console.log(`${table} (Added: ${added.length}, Changed: ${changed.length}, Deleted: ${deleted.length})`);
 
             resolve();
         });
@@ -57,6 +59,7 @@ function syncTable(table, id) {
 }
 
 async function syncTableFromScratch(table) {
+    await createTable(table);
     await pool.query(`DELETE FROM ${table}`);
     await syncTable(table);
 }
