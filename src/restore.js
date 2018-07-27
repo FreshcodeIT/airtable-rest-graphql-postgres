@@ -97,7 +97,7 @@ function restoreRelations(base, allObjects, { oldIdToNewMapping, excludeFields }
  * Also airtable have constraint for 5requests/sec and no batch insert or batch update API.
  * For free plan(1200 records) it can take (1200 / 5) / 60 = 4 minutes to restore full database once, and extra 4 minutes for restore foreign keys
  */
-async function syncPostgresToAirtable(targetBase, tables) {
+async function restoreAirtableFromPostgres(targetBase, tables) {
     try {
         var base = new Airtable({ apiKey: config.get('airtable.apiKey') }).base(targetBase);
         const allObjects = await getAllObjects(tables);
@@ -110,4 +110,4 @@ async function syncPostgresToAirtable(targetBase, tables) {
     }
 }
 
-module.exports = syncPostgresToAirtable;
+module.exports = restoreAirtableFromPostgres;

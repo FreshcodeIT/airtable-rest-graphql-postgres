@@ -1,6 +1,6 @@
 let chai = require('chai');
 let chaiHttp = require('chai-http');
-let server = require('../src/rest');
+let server = require('./rest');
 let config = require('config');
 let sync = require('../src/sync');
 let _ = require('lodash');

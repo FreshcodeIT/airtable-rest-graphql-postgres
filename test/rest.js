@@ -1,10 +1,9 @@
 let express = require('express');
 let app = express();
 let bodyParser = require('body-parser');
-let {listRecords, createRecord, retrieveRecord, deleteRecord, updateRecord} = require('./actions');
 let morgan = require('morgan');
 
-let port = 8080;
+let {listRecords, createRecord, retrieveRecord, deleteRecord, updateRecord} = require('../src/actions');
 
 app.use(morgan('combined'));
 app.use(bodyParser.json());                                     
@@ -19,8 +18,5 @@ app.route("/:table/:id")
     .get(retrieveRecord)
     .delete(deleteRecord)
     .patch(updateRecord);
-
-app.listen(port);
-console.log("Listening on port " + port);
 
 module.exports = app; 

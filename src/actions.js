@@ -13,6 +13,10 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
+function prepareResult(entity) {
+    return _.mapKeys(entity, (v, k) => _.camelCase(k));
+}
+
 async function listRecords(req, res) {
     const table = req.params.table;
 
@@ -25,13 +29,13 @@ async function listRecords(req, res) {
     const query = `SELECT id,fields,created_time FROM ${table} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
     console.log(query);
     const result = await pool.query(query);
-    res.json({ records: _.map(result.rows, (row) => _.mapKeys(row, (v, k) => _.camelCase(k))) });
+    res.json({ records: _.map(result.rows, prepareResult) });
 }
 
 async function createRecord(req, res) {
     const table = req.params.table;
     const result = await base(table).create(req.body.fields);
-    await syncTable(table, result.id);
+    await syncTable(base, table, result.id);
     res.json(result['_rawJson']);
 }
 
@@ -44,11 +48,11 @@ async function retrieveRecord(req, res) {
 
     const query = `SELECT id,fields,created_time FROM ${table} WHERE id=${id}`;
     const result = await pool.query(query);
-    res.json(_.mapKeys(result.rows[0], (v, k) => _.camelCase(k)));
+    res.json(prepareResult(result.rows[0]));
 }
 
-function deleteRecord() { 
-    
+function deleteRecord() {
+
 }
 
 async function updateRecord(req, res) {
