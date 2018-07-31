@@ -5,11 +5,11 @@ let morgan = require('morgan');
 let airql = require('../index');
 
 app.use(morgan('dev'));
-app.use(bodyParser.json());                                     
-app.use(bodyParser.urlencoded({extended: true}));               
-app.use(bodyParser.text());                                    
-app.use(bodyParser.json({ type: 'application/json'}));  
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.text());
+app.use(bodyParser.json({ type: 'application/json' }));
 
-airql.setupAirtableRest(app);
+app.use('/', airql.airtableRestRouter(require('../config/test')));
 
 module.exports = app; 

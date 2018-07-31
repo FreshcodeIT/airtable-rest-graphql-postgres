@@ -1,8 +1,6 @@
-const { syncTable } = require('../src/sync');
 const config = require('config');
 const _ = require('lodash');
 const restore = require('../src/restore');
-const { Pool } = require('pg');
 
 async function syncAll() {
     const tables = config.get('airtable.tables');

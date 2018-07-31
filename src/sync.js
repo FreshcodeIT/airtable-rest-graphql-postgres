@@ -2,7 +2,6 @@ const { Pool } = require('pg');
 const _ = require('lodash');
 const Airtable = require('airtable');
 const hash = require('object-hash');
-var config = require('config');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
@@ -72,8 +71,7 @@ function registerOnChangeHandler(handler) {
     onChangeHooks.push(handler);
 }
 
-async function processAndScheduleAllTables(base) {
-    const tables = config.get('airtable.tables');
+async function processAndScheduleAllTables(base, tables) {
     for (var i in tables) {
         await syncTable(base, tables[i]);
     }
@@ -81,10 +79,10 @@ async function processAndScheduleAllTables(base) {
         setTimeout(() => processAndScheduleAllTables(base), 1000);
 }
 
-async function init() {
-    const base = new Airtable({ apiKey: config.get('airtable.apiKey') }).base(config.get('airtable.base'));
-    await Promise.all(config.get('airtable.tables').map(createTable));
-    await processAndScheduleAllTables(base);
+async function init(config) {
+    const base = new Airtable({ apiKey: config.apiKey }).base(config.base);
+    await Promise.all(config.tables.map(createTable));
+    await processAndScheduleAllTables(base, config.tables);
 }
 
 module.exports = {

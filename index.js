@@ -1,18 +1,21 @@
-let { listRecords, createRecord, retrieveRecord, deleteRecord, updateRecord } = require('./src/actions');
+let AirtableRest = require('./src/actions');
+let express = require('express');
 
-function setupAirtableRest(app) {
-    app.route("/:table")
-        .get(listRecords)
-        .post(createRecord);
-    app.route("/:table/:id")
-        .get(retrieveRecord)
-        .delete(deleteRecord)
-        .patch(updateRecord);
-    return app;
+function airtableRestRouter(config) {
+    let router = express.Router({ mergeParams: true });
+    let airtable = new AirtableRest(config);
+    router.route("/:table")
+        .get(airtable.listRecords.bind(airtable))
+        .post(airtable.createRecord.bind(airtable));
+    router.route("/:table/:id")
+        .get(airtable.retrieveRecord.bind(airtable))
+        .delete(airtable.deleteRecord.bind(airtable))
+        .patch(airtable.updateRecord.bind(airtable));
+    return router;
 }
 
 function onChange(hook) {
 
 }
 
-module.exports = { setupAirtableRest, onChange };
+module.exports = { airtableRestRouter, onChange };

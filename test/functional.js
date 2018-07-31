@@ -1,10 +1,10 @@
 let chai = require('chai');
 let chaiHttp = require('chai-http');
-let config = require('config');
 
 let server = require('./rest');
 let {init} = require('../src/sync');
 let {clearPostgresTable} = require('./utils');
+let config = require('../config/test');
 
 chai.use(chaiHttp);
 
@@ -14,7 +14,7 @@ function selectAndCompareLocalAndRemote(url) {
     return Promise
         .all([
             chai.request(server).get(url),
-            chai.request(`https://api.airtable.com/v0/${config.get('airtable.base')}`).get(url).set('Authorization', 'Bearer keymYek7PsWGf6j7i')
+            chai.request(`https://api.airtable.com/v0/${config.base}`).get(url).set('Authorization', `Bearer ${config.apiKey}`)
         ])
         .then(([local, airtable]) => {
             chai.expect(local.body.records).to.be.deep.equal(airtable.body.records);
@@ -24,7 +24,7 @@ function selectAndCompareLocalAndRemote(url) {
 }
 
 async function getSingleEntity(table, id) {
-    const res = await chai.request(`https://api.airtable.com/v0/${config.get('airtable.base')}`).get(`/${table}/${id}`).set('Authorization', 'Bearer keymYek7PsWGf6j7i');
+    const res = await chai.request(`https://api.airtable.com/v0/${config.base}`).get(`/${table}/${id}`).set('Authorization', `Bearer ${config.apiKey}`)
     return res.body;
 }
 
@@ -33,7 +33,7 @@ describe('Properties', function () {
     before(async () => {
         // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
         await clearPostgresTable('Property');
-        await init();
+        await init(config);
     });
     describe('/GET All Properties', () => {
         it('it should GET all the Properties', () => {
