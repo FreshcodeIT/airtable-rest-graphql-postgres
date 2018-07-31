@@ -1,7 +1,7 @@
 let chai = require('chai');
 
-let {server, airtable} = require('./rest');
-let {clearPostgresTable, selectAndCompareLocalAndRemote} = require('./utils');
+let { server, airtable } = require('./rest');
+let { clearPostgresTable, selectAndCompareLocalAndRemote, getEntitiesAsMap } = require('./utils');
 
 // TODO : use Airtable.js with custom endpoint
 // You can use https://codepen.io/airtable/full/rLKkYB to create proper Airtable API URL
@@ -14,24 +14,26 @@ describe('Properties', function () {
     });
     describe('/GET All Properties', () => {
         it('it should GET all the Properties', () => {
-            return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&view=Grid%20view&filterByFormula=AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))&sort[0][field]=Created time&sort[0][direction]=asc`);
+            return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&view=Grid%20view&filterByFormula=AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))&sort[0][field]=Name&sort[0][direction]=asc`);
         });
     });
     describe('/POST New property', () => {
         it('it should Post property which should arrive both in local and remote repository', async () => {
+            const cities = await getEntitiesAsMap('target.City', 'Name');
+            const features = await getEntitiesAsMap('target.Feature', 'Name');
             let property = {
                 fields: {
                     "Name": "Some property",
                     "City": [
-                      "rec15jNSgn0MUMNxZ"
+                        cities.London
                     ],
                     "Features": [
-                      "recIm3W2cabO72d3J",
-                      "recHwdfhyLBqIVajX"
+                        features.Gym,
+                        features.Lounge
                     ],
                     "Date": "2018-07-11",
                     "Single select": "yes"
-                  }
+                }
             };
             const result = await chai.request(server).post('/Property').send(property);
             return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${result.body.id}'`);
@@ -58,13 +60,13 @@ describe('Properties', function () {
 
     //     });
     // });
-    describe('/PATCH/:id property', () => {
-
+    describe('/PATCH/:id property', async () => {
         const newName = "The Chronicles of Narnia" + (new Date());
-        const cities = { London: 'rec15jNSgn0MUMNxZ', Zaporozhye: 'recEu3Pa4VZ88nPKV' };
-        const id = 'rectjYQmyIofRmQ8J';
 
         it('change Property name and City(CityLookup also should change)', async () => {
+            const cities = await getEntitiesAsMap('target.City', 'Name');
+            const id = (await getEntitiesAsMap('target.Property', 'Name'))['21 Liverpool Street, London, UK'];
+
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { Name: newName, City: [cities.Zaporozhye] } });
             const [localZp] = await selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
             chai.expect(localZp.body.records[0].fields.Name == newName).to.be.true;
@@ -72,6 +74,9 @@ describe('Properties', function () {
         });
 
         it('Change City one more time to ensure that Lookup field is also changed', async () => {
+            const cities = await getEntitiesAsMap('target.City', 'Name');
+            const id = (await getEntitiesAsMap('target.Property', 'Name'))[newName];
+
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { City: [cities.London] } });
             const [localLondon] = await selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
             chai.expect(localLondon.body.records[0].fields.CityLookup[0] == 'London').to.be.true;
@@ -80,7 +85,7 @@ describe('Properties', function () {
 
     describe('/GET All Properties', () => {
         it('After all changes and updates - lists should be qeual', () => {
-            return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=100&view=Grid%20view&sort[0][field]=Created time&sort[0][direction]=asc`);
+            return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=100&view=Grid%20view&sort[0][field]=Name&sort[0][direction]=asc`);
         });
     });
 

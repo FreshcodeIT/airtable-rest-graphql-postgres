@@ -14,7 +14,7 @@ async function clearAirtableTable(schema, base, table) {
 }
 
 describe('Restore', async function () {
-    this.timeout(5000);
+    this.timeout(20000);
 
     const tables = config.tables;
     const sourceDatabase = 'appOqesCBzpUDkCRa';
@@ -28,12 +28,12 @@ describe('Restore', async function () {
 
     before(async () => {
         // Sync Source Airtable to local Postgres
-        await pool.query(`DROP SCHEMA source CASCADE`);
+        await pool.query(`DROP SCHEMA IF EXISTS source CASCADE`);
         let sourceAirtable = airql.airtableRestRouter(_.assign({ base: sourceDatabase, schema: 'source' }, commonConfig)).airtable;
         await sourceAirtable.setupPeriodicUpdate();
 
         // Clear destination database
-        await pool.query(`DROP SCHEMA target CASCADE`);
+        await pool.query(`DROP SCHEMA IF EXISTS target CASCADE`);
         let destinationAirtable = airql.airtableRestRouter(_.assign({ base: destinationDatabase, schema: 'target' }, commonConfig)).airtable;
         await destinationAirtable.setupPeriodicUpdate();
         console.log('Sync done');
@@ -52,6 +52,8 @@ describe('Restore', async function () {
     });
 
     it('after restore content of two airtable bases should be identical', async () => {
-        await restore(destinationDatabase, apiKey, tables);
+        await restore(destinationDatabase, apiKey, 'source', tables);
+        // TODO : think how compare two databases with different id's but with same content
+        // IDEA : build deep nested graph that represent whole database, remove id field and then deeply compare graphs
     });
 })

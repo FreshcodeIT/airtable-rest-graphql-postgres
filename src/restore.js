@@ -38,9 +38,9 @@ function replaceOldFKtoNewFK(fields, oldIdToNewMapping) {
     }));
 }
 
-async function getAllObjects(tables) {
+async function getAllObjects(schema, tables) {
     const allObectsGrouped = await Promise.all(_.map(tables, async (table) => {
-        const rows = (await pool.query(`SELECT id,fields FROM ${table}`)).rows;
+        const rows = (await pool.query(`SELECT id,fields FROM ${schema}.${table}`)).rows;
         return _.map(rows, obj => _.assign({ __tableName: table }, obj));
     }));
     return _.flatten(allObectsGrouped);
@@ -97,10 +97,10 @@ function restoreRelations(base, allObjects, { oldIdToNewMapping, excludeFields }
  * Also airtable have constraint for 5requests/sec and no batch insert or batch update API.
  * For free plan(1200 records) it can take (1200 / 5) / 60 = 4 minutes to restore full database once, and extra 4 minutes for restore foreign keys
  */
-async function restoreAirtableFromPostgres(targetBase, apiKey, tables) {
+async function restoreAirtableFromPostgres(targetBase, apiKey, schema, tables) {
     try {
         var base = new Airtable({ apiKey }).base(targetBase);
-        const allObjects = await getAllObjects(tables);
+        const allObjects = await getAllObjects(schema, tables);
         const objectsWithoutFk = await getAllObjectsWithoutKeys(allObjects);
         const plainObjectRestoreMetainfo = await restorePlainObjects(base, objectsWithoutFk);
         console.log(plainObjectRestoreMetainfo);

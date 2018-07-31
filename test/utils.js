@@ -2,6 +2,7 @@ let chai = require('chai');
 let chaiHttp = require('chai-http');
 const { Pool } = require('pg');
 let config = require('../config/test');
+const _ = require('lodash');
 
 chai.use(chaiHttp);
 
@@ -35,6 +36,11 @@ async function getSingleEntity(table, id) {
     return res.body;
 }
 
+async function getEntitiesAsMap(table, groupKey) {
+    const result = (await pool.query(`select id,fields from ${table}`)).rows;
+    return _.fromPairs(_.map(result, (ent) => [ent.fields[groupKey], ent.id]));
+}
+
 process.on('unhandledRejection', e => { throw e; });
 
-module.exports = {clearAirtableBase, clearPostgresTable, selectAndCompareLocalAndRemote, getSingleEntity, pool};
+module.exports = {clearAirtableBase, clearPostgresTable, selectAndCompareLocalAndRemote, getSingleEntity, pool, getEntitiesAsMap};

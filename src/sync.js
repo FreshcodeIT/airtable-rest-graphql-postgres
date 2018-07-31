@@ -2,6 +2,7 @@ const { Pool } = require('pg');
 const _ = require('lodash');
 const Airtable = require('airtable');
 const hash = require('object-hash');
+const fs = require('fs');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
@@ -15,8 +16,13 @@ class Syncronizer {
         this.schema = this.config.schema;
     }
 
+    async createFunctions() {
+        let functions = fs.readFileSync('/usr/app/src/functions.sql', 'utf8');
+        await pool.query(functions);
+    }
+
     async createSchema() {
-        await pool.query(`CREATE SCHEMA IF NOT EXISTS ${this.schema}`)
+        await pool.query(`CREATE SCHEMA IF NOT EXISTS ${this.schema}`);
     }
 
     async createTable(table) {
@@ -89,7 +95,7 @@ class Syncronizer {
     }
 
     async setupPeriodicUpdate() {
-        // prepare Postgres DB
+        await this.createFunctions();
         await this.createSchema();
         await Promise.all(this.config.tables.map(this.createTable.bind(this)));
 
