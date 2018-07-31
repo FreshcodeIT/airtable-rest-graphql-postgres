@@ -7,8 +7,6 @@ const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
-const onChangeHooks = [];
-
 async function createTable(table) {
     const isExists = (await pool.query(`SELECT to_regclass('${table}') AS exists`)).rows[0].exists;
     if (!isExists) {
@@ -17,13 +15,13 @@ async function createTable(table) {
     }
 }
 
-function runChangeHooks(eventType, entities) {
+function runChangeHooks(onChangeHooks, eventType, entities) {
     _.forEach(entities, (entity) => {
-        _.forEach(onChangeHooks, (hook) => hook(eventType, entity));
+        _.forEach(onChangeHooks || [], (hook) => hook(eventType, entity));
     })
 }
 
-function syncTable(base, table, id) {
+function syncTable(base, table, id, hooks) {
     return new Promise((resolve, reject) => {
         const allValues = [];
         const filter = id ? { filterByFormula: `RECORD_ID()='${id}'` } : {};
@@ -56,9 +54,9 @@ function syncTable(base, table, id) {
 
             await Promise.all(_.flattenDeep([addedP, deletedP, changedP]));
 
-            runChangeHooks('insert', added);
-            runChangeHooks('update', changed);
-            runChangeHooks('delte', deleted);
+            runChangeHooks(hooks, 'insert', added);
+            runChangeHooks(hooks, 'update', changed);
+            runChangeHooks(hooks, 'delte', deleted);
 
             console.log(`${table} (Added: ${added.length}, Changed: ${changed.length}, Deleted: ${deleted.length})`);
 
@@ -67,27 +65,22 @@ function syncTable(base, table, id) {
     })
 }
 
-function registerOnChangeHandler(handler) {
-    onChangeHooks.push(handler);
-}
-
-async function processAndScheduleAllTables(base, tables) {
-    for (var i in tables) {
-        await syncTable(base, tables[i]);
+async function processAndScheduleAllTables(base, config, changeHooks) {
+    for (var i in config.tables) {
+        await syncTable(base, config.tables[i], null, changeHooks);
     }
     if (process.env.NODE_ENV === 'production')
-        setTimeout(() => processAndScheduleAllTables(base), 1000);
+        setTimeout(() => processAndScheduleAllTables(base, config, changeHooks), 1000);
 }
 
-async function init(config) {
+async function setupPeriodicUpdate(config, changeHooks) {
     const base = new Airtable({ apiKey: config.apiKey }).base(config.base);
     await Promise.all(config.tables.map(createTable));
-    await processAndScheduleAllTables(base, config.tables);
+    await processAndScheduleAllTables(base, config, changeHooks);
 }
 
 module.exports = {
-    init,
+    setupPeriodicUpdate,
     syncTable,
-    registerOnChangeHandler,
     createTable
 };

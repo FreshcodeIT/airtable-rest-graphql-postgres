@@ -10,6 +10,8 @@ app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.text());
 app.use(bodyParser.json({ type: 'application/json' }));
 
-app.use('/', airql.airtableRestRouter(require('../config/test')));
+let {router, airtable} = airql.airtableRestRouter(require('../config/test'));
 
-module.exports = app; 
+app.use('/', router);
+
+module.exports = {server: app, airtable}; 

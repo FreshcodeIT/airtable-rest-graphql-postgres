@@ -1,8 +1,7 @@
 let chai = require('chai');
 let chaiHttp = require('chai-http');
 
-let server = require('./rest');
-let {init} = require('../src/sync');
+let {server, airtable} = require('./rest');
 let {clearPostgresTable} = require('./utils');
 let config = require('../config/test');
 
@@ -33,7 +32,7 @@ describe('Properties', function () {
     before(async () => {
         // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
         await clearPostgresTable('Property');
-        await init(config);
+        await airtable.setupPeriodicUpdate();
     });
     describe('/GET All Properties', () => {
         it('it should GET all the Properties', () => {

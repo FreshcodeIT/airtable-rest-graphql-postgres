@@ -2,25 +2,33 @@ const { Pool } = require('pg');
 const { formulaToSql, sortToSql } = require('./formula');
 const Airtable = require('airtable');
 const _ = require('lodash');
-const { syncTable } = require('./sync');
+const { syncTable, setupPeriodicUpdate } = require('./sync');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
 });
 
-function prepareResult(entity) {
-    return _.mapKeys(entity, (v, k) => _.camelCase(k));
-}
-
 class AirtableRest {
     constructor(config) {
         this.config = config;
         this.base = new Airtable({ apiKey: config.apiKey }).base(config.base);
+        this.onChangeHooks = [];
+        this.onSelectHooks = [_.identity];
+    }
+
+    setupPeriodicUpdate() {
+        return setupPeriodicUpdate(this.config, this.onChangeHooks);
     }
 
     validateTable(table) {
         if (!_.includes(this.config.tables, table))
             throw new Error(`Table ${table} not available`);
+    }
+
+    prepareResult(entity) {
+        const convertedKeys = _.mapKeys(entity, (v, k) => _.camelCase(k));
+        const appliedHooks = _.reduce(this.onSelectHooks, (result, fn) => fn(result), convertedKeys);
+        return convertedKeys;
     }
 
     async listRecords(req, res) {
@@ -34,7 +42,7 @@ class AirtableRest {
         const query = `SELECT id,fields,created_time FROM ${table} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
         console.log(query);
         const result = await pool.query(query);
-        res.json({ records: _.map(result.rows, prepareResult) });
+        res.json({ records: _.map(result.rows, this.prepareResult.bind(this)) });
     }
 
     async createRecord(req, res) {
@@ -68,6 +76,10 @@ class AirtableRest {
         const result = await this.base(table).update(id, req.body.fields);
         await syncTable(this.base, table, id);
         res.json(result['_rawJson']);
+    }
+
+    onChange(handler) {
+        this.onChangeHooks.push(handler);
     }
 }
 

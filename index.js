@@ -11,11 +11,7 @@ function airtableRestRouter(config) {
         .get(airtable.retrieveRecord.bind(airtable))
         .delete(airtable.deleteRecord.bind(airtable))
         .patch(airtable.updateRecord.bind(airtable));
-    return router;
+    return {router, airtable};
 }
 
-function onChange(hook) {
-
-}
-
-module.exports = { airtableRestRouter, onChange };
+module.exports = { airtableRestRouter };
