@@ -19,7 +19,7 @@ class AirtableRest {
     }
 
     setupPeriodicUpdate() {
-        return setupPeriodicUpdate(this.config, this.onChangeHooks);
+        return this.sync.setupPeriodicUpdate(this.config, this.onChangeHooks);
     }
 
     validateTable(table) {

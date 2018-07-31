@@ -10,7 +10,7 @@ describe('Properties', function () {
     before(async () => {
         // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
         await clearPostgresTable('Property');
-        await airtable.sync.setupPeriodicUpdate();
+        await airtable.setupPeriodicUpdate();
     });
     describe('/GET All Properties', () => {
         it('it should GET all the Properties', () => {
@@ -75,6 +75,12 @@ describe('Properties', function () {
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { City: [cities.London] } });
             const [localLondon] = await selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
             chai.expect(localLondon.body.records[0].fields.CityLookup[0] == 'London').to.be.true;
+        });
+    });
+
+    describe('/GET All Properties', () => {
+        it('After all changes and updates - lists should be qeual', () => {
+            return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=100&view=Grid%20view&sort[0][field]=Created time&sort[0][direction]=asc`);
         });
     });
 

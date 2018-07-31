@@ -2,26 +2,56 @@ const config = require('config');
 const _ = require('lodash');
 const restore = require('../src/restore');
 const airql = require('../index');
+const Airtable = require('airtable');
+const { pool } = require('./utils');
+const chai = require('chai');
 
-async function syncAll() {
-    const tables = config.get('airtable.tables');
-    const sourceDatabase = '';
-    const destinationDatabase = 'appyIPW73BwV0EYsH';
-    const key = 'keymYek7PsWGf6j7i';
-
-    let sourceAirtable = airql.airtableRestRouter({ apiKey: key, base: sourceDatabase }).airtable;
-
-    // Clear destination database
-    clearAirtableBase(key, destinationDatabase);
-
-    // Ensure that destination database is empty
-
-    // Sync Source Airtable to local Postgres
-    await Promise.all(_.map(tables, clearPostgresTable('Property')));
-    await sourceAirtable.setupPeriodicUpdate();
-
-    // Restore from local Postgres to Destination Airtable
-    await restore(destinationDatabase, tables);
+async function clearAirtableTable(schema, base, table) {
+    const ids = (await pool.query(`select id from ${schema}.${table}`)).rows;
+    for (let i in ids) {
+        await base(table).destroy(ids[i].id);
+    }
 }
 
-// syncAll();
+describe('Restore', async function () {
+    this.timeout(5000);
+
+    const tables = config.tables;
+    const sourceDatabase = 'appOqesCBzpUDkCRa';
+    const destinationDatabase = 'appi7MJY9TJIqNNJj';
+
+    const apiKey = 'keymYek7PsWGf6j7i';
+
+    const commonConfig = { tables, apiKey };
+
+    const base = new Airtable({ apiKey }).base(destinationDatabase);
+
+    before(async () => {
+        // Sync Source Airtable to local Postgres
+        await pool.query(`DROP SCHEMA source CASCADE`);
+        let sourceAirtable = airql.airtableRestRouter(_.assign({ base: sourceDatabase, schema: 'source' }, commonConfig)).airtable;
+        await sourceAirtable.setupPeriodicUpdate();
+
+        // Clear destination database
+        await pool.query(`DROP SCHEMA target CASCADE`);
+        let destinationAirtable = airql.airtableRestRouter(_.assign({ base: destinationDatabase, schema: 'target' }, commonConfig)).airtable;
+        await destinationAirtable.setupPeriodicUpdate();
+        console.log('Sync done');
+        for (let i in tables) {
+            await clearAirtableTable('target', base, tables[i]);
+        }
+        console.log('Clear done');
+    });
+
+    // Ensure that destination database is empty
+    it('destination table should be empty', async () => {
+        for (let i in tables) {
+            const result = (await base(tables[i]).select({}).firstPage());
+            chai.expect(result.length == 0).to.be.true;
+        }
+    });
+
+    it('after restore content of two airtable bases should be identical', async () => {
+        await restore(destinationDatabase, apiKey, tables);
+    });
+})

@@ -11,7 +11,7 @@
     "start": "node src/rest.js",
     "test": "docker-compose up --build",
     "test-in-docker": "mocha -S",
-    "test-backup": "node test/backup.js"
+    "test-backup": "mocha test/01-restore.js"
   },
   "devDependencies": {
     "morgan": "^1.9.0",

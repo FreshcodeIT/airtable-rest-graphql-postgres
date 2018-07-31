@@ -54,7 +54,7 @@ class Syncronizer {
                 if (error)
                     return reject(error);
 
-                const currentState = (await pool.query(`SELECT id,hash FROM ${pgTable}`)).rows;
+                const currentState = (await pool.query(`SELECT id,hash FROM ${pgTable} ${id && 'WHERE id=$1'}`, _.compact([id]))).rows;
                 const added = _.differenceBy(allValues, currentState, 'id');
                 const deleted = _.differenceBy(currentState, allValues, 'id');
                 const changed = _(allValues)

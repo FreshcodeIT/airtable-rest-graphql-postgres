@@ -37,4 +37,4 @@ async function getSingleEntity(table, id) {
 
 process.on('unhandledRejection', e => { throw e; });
 
-module.exports = {clearAirtableBase, clearPostgresTable, selectAndCompareLocalAndRemote, getSingleEntity};
+module.exports = {clearAirtableBase, clearPostgresTable, selectAndCompareLocalAndRemote, getSingleEntity, pool};
