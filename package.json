@@ -10,7 +10,7 @@
   "scripts": {
     "start": "node src/rest.js",
     "test": "docker-compose up --build",
-    "test-in-docker": "mocha",
+    "test-in-docker": "mocha -S",
     "test-backup": "node test/backup.js"
   },
   "devDependencies": {
