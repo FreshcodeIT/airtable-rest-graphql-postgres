@@ -1,42 +1,20 @@
 let chai = require('chai');
-let chaiHttp = require('chai-http');
 
 let {server, airtable} = require('./rest');
-let {clearPostgresTable} = require('./utils');
-let config = require('../config/test');
-
-chai.use(chaiHttp);
+let {clearPostgresTable, selectAndCompareLocalAndRemote} = require('./utils');
 
 // TODO : use Airtable.js with custom endpoint
 // You can use https://codepen.io/airtable/full/rLKkYB to create proper Airtable API URL
-function selectAndCompareLocalAndRemote(url) {
-    return Promise
-        .all([
-            chai.request(server).get(url),
-            chai.request(`https://api.airtable.com/v0/${config.base}`).get(url).set('Authorization', `Bearer ${config.apiKey}`)
-        ])
-        .then(([local, airtable]) => {
-            chai.expect(local.body.records).to.be.deep.equal(airtable.body.records);
-            chai.expect(local.body.records.length > 0).to.be.true;
-            return [local, airtable];
-        });
-}
-
-async function getSingleEntity(table, id) {
-    const res = await chai.request(`https://api.airtable.com/v0/${config.base}`).get(`/${table}/${id}`).set('Authorization', `Bearer ${config.apiKey}`)
-    return res.body;
-}
-
 describe('Properties', function () {
     this.timeout(5000);
     before(async () => {
         // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
         await clearPostgresTable('Property');
-        await airtable.setupPeriodicUpdate();
+        await airtable.sync.setupPeriodicUpdate();
     });
     describe('/GET All Properties', () => {
         it('it should GET all the Properties', () => {
-            return selectAndCompareLocalAndRemote(`/Property?maxRecords=3&view=Grid%20view&filterByFormula=AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))&sort[0][field]=Created time&sort[0][direction]=asc`);
+            return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&view=Grid%20view&filterByFormula=AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))&sort[0][field]=Created time&sort[0][direction]=asc`);
         });
     });
     describe('/POST New property', () => {
@@ -56,7 +34,7 @@ describe('Properties', function () {
                   }
             };
             const result = await chai.request(server).post('/Property').send(property);
-            return selectAndCompareLocalAndRemote(`/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${result.body.id}'`);
+            return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${result.body.id}'`);
         });
     });
     // describe('/GET/:id book', () => {
@@ -88,14 +66,14 @@ describe('Properties', function () {
 
         it('change Property name and City(CityLookup also should change)', async () => {
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { Name: newName, City: [cities.Zaporozhye] } });
-            const [localZp] = await selectAndCompareLocalAndRemote(`/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
+            const [localZp] = await selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
             chai.expect(localZp.body.records[0].fields.Name == newName).to.be.true;
             chai.expect(localZp.body.records[0].fields.CityLookup[0] == 'Zaporozhye').to.be.true;
         });
 
         it('Change City one more time to ensure that Lookup field is also changed', async () => {
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { City: [cities.London] } });
-            const [localLondon] = await selectAndCompareLocalAndRemote(`/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
+            const [localLondon] = await selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&filterByFormula=RECORD_ID()%3D'${id}'`);
             chai.expect(localLondon.body.records[0].fields.CityLookup[0] == 'London').to.be.true;
         });
     });

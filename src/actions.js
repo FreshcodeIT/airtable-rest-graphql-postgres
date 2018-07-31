@@ -2,7 +2,7 @@ const { Pool } = require('pg');
 const { formulaToSql, sortToSql } = require('./formula');
 const Airtable = require('airtable');
 const _ = require('lodash');
-const { syncTable, setupPeriodicUpdate } = require('./sync');
+const Syncronizer = require('./sync');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
@@ -14,6 +14,8 @@ class AirtableRest {
         this.base = new Airtable({ apiKey: config.apiKey }).base(config.base);
         this.onChangeHooks = [];
         this.onSelectHooks = [_.identity];
+        this.schema = this.config.schema;
+        this.sync = new Syncronizer(config, this.onChangeHooks);
     }
 
     setupPeriodicUpdate() {
@@ -39,7 +41,7 @@ class AirtableRest {
         const limit = parseInt(req.query.maxRecords) || 100;
         const filter = formulaToSql(req.query.filterByFormula);
         const sort = sortToSql(req.query.sort);
-        const query = `SELECT id,fields,created_time FROM ${table} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
+        const query = `SELECT id,fields,created_time FROM ${this.schema}.${table} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
         console.log(query);
         const result = await pool.query(query);
         res.json({ records: _.map(result.rows, this.prepareResult.bind(this)) });
@@ -51,7 +53,7 @@ class AirtableRest {
         this.validateTable(table);
 
         const result = await this.base(table).create(req.body.fields);
-        await syncTable(this.base, table, result.id);
+        await this.sync.syncTable(table, result.id);
         res.json(result['_rawJson']);
     }
 
@@ -61,7 +63,7 @@ class AirtableRest {
 
         this.validateTable(table)
 
-        const query = `SELECT id,fields,created_time FROM ${table} WHERE id=${id}`;
+        const query = `SELECT id,fields,created_time FROM ${this.schema}.${table} WHERE id=${id}`;
         const result = await pool.query(query);
         res.json(prepareResult(result.rows[0]));
     }
@@ -74,7 +76,7 @@ class AirtableRest {
         const table = req.params.table;
         const id = req.params.id;
         const result = await this.base(table).update(id, req.body.fields);
-        await syncTable(this.base, table, id);
+        await this.sync.syncTable(table, id);
         res.json(result['_rawJson']);
     }
 
