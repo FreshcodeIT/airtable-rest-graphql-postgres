@@ -30,7 +30,7 @@ class AirtableRest {
     prepareResult(entity) {
         const convertedKeys = _.mapKeys(entity, (v, k) => _.camelCase(k));
         const appliedHooks = _.reduce(this.onSelectHooks, (result, fn) => fn(result), convertedKeys);
-        return convertedKeys;
+        return appliedHooks;
     }
 
     async listRecords(req, res) {
@@ -82,6 +82,10 @@ class AirtableRest {
 
     onChange(handler) {
         this.onChangeHooks.push(handler);
+    }
+
+    onSelect(handler) {
+        this.onSelectHooks.push(handler);
     }
 }
 
