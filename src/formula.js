@@ -3,7 +3,7 @@ const _ = require('lodash');
 
 // TODO : allow only Aritable functions(can check by requesting list of functions from schema)
 
-function treeToSql({ type, body, callee, arguments, name, raw, expression, operator, left, right}) {
+function treeToSql({ type, body, callee, arguments, name, raw, expression, operator, left, right, value}) {
     switch (type) {
         case 'Program':
             return treeToSql(_.last(body));
@@ -35,8 +35,10 @@ function treeToSql({ type, body, callee, arguments, name, raw, expression, opera
             }
             return;
         case 'Identifier':
-            return `fields->'${name}'`;
+            return `fields->>'${name}'`;
         case 'Literal':
+            if (value.startsWith('={') && value.endsWith('}='))
+                return `fields->>'${value.replace('={','').replace('}=','')}'`
             return raw;
     }
 }
@@ -44,7 +46,7 @@ function treeToSql({ type, body, callee, arguments, name, raw, expression, opera
 function formulaToSql(formula) {
     if (formula) {
         // TODO : create speicific parser for Airtable formulas
-        formula = formula.replace('=', '==');
+        formula = formula.replace('=', '==').replace('{','"={').replace('}','}="');
         console.log("Formula:" + formula);
         return `${treeToSql(esprima.parse(formula))}::boolean`;
     }

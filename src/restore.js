@@ -1,7 +1,6 @@
 const { Pool } = require('pg');
 const Airtable = require('airtable');
 const _ = require('lodash');
-const config = require('config');
 
 const pool = new Pool({
     connectionString: process.env.DATABASE_URL
@@ -38,9 +37,13 @@ function replaceOldFKtoNewFK(fields, oldIdToNewMapping) {
     }));
 }
 
+function toPgTable(schema, table) {
+    return schema + '.' + table.replace(/ /,'_');
+}
+
 async function getAllObjects(schema, tables) {
     const allObectsGrouped = await Promise.all(_.map(tables, async (table) => {
-        const rows = (await pool.query(`SELECT id,fields FROM ${schema}.${table}`)).rows;
+        const rows = (await pool.query(`SELECT id,fields FROM ${toPgTable(schema,table)}`)).rows;
         return _.map(rows, obj => _.assign({ __tableName: table }, obj));
     }));
     return _.flatten(allObectsGrouped);
