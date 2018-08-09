@@ -1,3 +1,10 @@
+
+Don't forget to set env variable for postgres database 
+
+```DATABASE_URL=postgres://airtable@postgres/airtable npm start```
+
+or in docker-compose.yml
+
 ```javascript
 let airql = require('airtable-postgres-graphql');
 let app = express();
