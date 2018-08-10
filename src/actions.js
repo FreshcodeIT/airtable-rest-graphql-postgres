@@ -41,7 +41,7 @@ class AirtableRest {
         const limit = parseInt(req.query.maxRecords) || 100;
         const filter = formulaToSql(req.query.filterByFormula);
         const sort = sortToSql(req.query.sort);
-        const query = `SELECT id,fields,created_time FROM ${this.schema}.${table} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
+        const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
         console.log(query);
         const result = await pool.query(query);
         res.json({ records: _.map(result.rows, this.prepareResult.bind(this)) });
@@ -63,7 +63,7 @@ class AirtableRest {
 
         this.validateTable(table)
 
-        const query = `SELECT id,fields,created_time FROM ${this.schema}.${table} WHERE id=${id}`;
+        const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE id=${id}`;
         const result = await pool.query(query);
         res.json(prepareResult(result.rows[0]));
     }

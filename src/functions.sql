@@ -1,17 +1,17 @@
-CREATE OR REPLACE FUNCTION ARRAYUNIQUE(data jsonb) RETURNS jsonb
-    AS $$ SELECT jsonb_agg(distinct elem) FROM jsonb_array_elements(data) elem $$
+CREATE OR REPLACE FUNCTION ARRAYUNIQUE(data text) RETURNS jsonb
+    AS $$ SELECT jsonb_agg(distinct elem) FROM jsonb_array_elements(data::jsonb) elem $$
     LANGUAGE SQL
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;
 
-CREATE OR REPLACE FUNCTION ARRAYCOMPACT(data jsonb) RETURNS jsonb
-    AS $$ SELECT jsonb_agg(elem) FROM jsonb_array_elements(data) elem WHERE NOT elem='null' $$
+CREATE OR REPLACE FUNCTION ARRAYCOMPACT(data text) RETURNS jsonb
+    AS $$ SELECT jsonb_agg(elem) FROM jsonb_array_elements(data::jsonb) elem WHERE NOT elem='null' $$
     LANGUAGE SQL
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;
 
-CREATE OR REPLACE FUNCTION ARRAYJOIN(data jsonb, separator text) RETURNS text
-    AS $$ SELECT string_agg(trim(elem::text, '"'), ', ') FROM jsonb_array_elements(data) elem $$
+CREATE OR REPLACE FUNCTION ARRAYJOIN(data text, separator text) RETURNS text
+    AS $$ SELECT string_agg(trim(elem::text, '"'), ', ') FROM jsonb_array_elements(data::jsonb) elem $$
     LANGUAGE SQL
     IMMUTABLE
     RETURNS NULL ON NULL INPUT;

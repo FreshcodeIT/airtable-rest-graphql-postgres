@@ -16,6 +16,10 @@ class Syncronizer {
         this.schema = this.config.schema;
     }
 
+    toPgTable(table) {
+        return this.schema + '.' + table.replace(/ /,'_');
+    }
+
     async createFunctions() {
         let functions = fs.readFileSync('/usr/app/src/functions.sql', 'utf8');
         await pool.query(functions);
@@ -26,10 +30,11 @@ class Syncronizer {
     }
 
     async createTable(table) {
-        const isExists = (await pool.query(`SELECT to_regclass('${this.schema}.${table}') AS exists`)).rows[0].exists;
+        const pgTable = this.toPgTable(table);
+        const isExists = (await pool.query(`SELECT to_regclass('${pgTable}') AS exists`)).rows[0].exists;
         if (!isExists) {
-            await pool.query(`CREATE TABLE ${this.schema}.${table} (id text, fields jsonb, hash text, created_time timestamp)`);
-            console.log(`Table ${this.schema}.${table} created`);
+            await pool.query(`CREATE TABLE ${pgTable} (id text, fields jsonb, hash text, created_time timestamp)`);
+            console.log(`Table ${pgTable} created`);
         }
     }
 
@@ -40,7 +45,7 @@ class Syncronizer {
     }
 
     syncTable(table, id) {
-        const pgTable = `${this.schema}.${table}`;
+        const pgTable = this.toPgTable(table);
         const runChangeHooks = this.runChangeHooks.bind(this);
 
         return new Promise((resolve, reject) => {

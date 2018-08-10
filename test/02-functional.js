@@ -17,9 +17,14 @@ describe('Properties', function () {
             return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=3&view=Grid%20view&filterByFormula=AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))&sort[0][field]=Name&sort[0][direction]=asc`);
         });
     });
+    describe('/GET All Properties with Space in Field name', () => {
+        it('it should GET all the Properties', () => {
+            return selectAndCompareLocalAndRemote(server, `/Property?filterByFormula={Single select}%3D'yes'&sort[0][field]=Name&sort[0][direction]=asc`);
+        });
+    });
     describe('/POST New property', () => {
         it('it should Post property which should arrive both in local and remote repository', async () => {
-            const cities = await getEntitiesAsMap('target.City', 'Name');
+            const cities = await getEntitiesAsMap('target.City_name', 'Name');
             const features = await getEntitiesAsMap('target.Feature', 'Name');
             let property = {
                 fields: {
@@ -64,7 +69,7 @@ describe('Properties', function () {
         const newName = "The Chronicles of Narnia" + (new Date());
 
         it('change Property name and City(CityLookup also should change)', async () => {
-            const cities = await getEntitiesAsMap('target.City', 'Name');
+            const cities = await getEntitiesAsMap('target.City_name', 'Name');
             const id = (await getEntitiesAsMap('target.Property', 'Name'))['21 Liverpool Street, London, UK'];
 
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { Name: newName, City: [cities.Zaporozhye] } });
@@ -74,7 +79,7 @@ describe('Properties', function () {
         });
 
         it('Change City one more time to ensure that Lookup field is also changed', async () => {
-            const cities = await getEntitiesAsMap('target.City', 'Name');
+            const cities = await getEntitiesAsMap('target.City_name', 'Name');
             const id = (await getEntitiesAsMap('target.Property', 'Name'))[newName];
 
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { City: [cities.London] } });

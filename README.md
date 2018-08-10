@@ -9,9 +9,13 @@ or in docker-compose.yml
 let airql = require('airtable-postgres-graphql');
 let app = express();
 
-let {router, airtable} = airql.airtableRestRouter({apiKey: '..', base: '..', tables: ['Property', 'Feature']})
+const baseId = 'some base id';
+const apiKey = 'some api key';
 
-app.use('/airtable', router);
+let {router, airtable} = airql.airtableRestRouter({apiKey: apiKey, base: baseId, tables: ['Property', 'Feature']});
+airtable.setupPeriodicUpdate();
+
+app.use(`/v0/${baseId}`, router); // for drop-in replacement usage with Airtable.js, just change host
 
 airtable.onChange((event, entity) => {
     switch(event){

@@ -6,8 +6,12 @@ const Airtable = require('airtable');
 const { pool } = require('./utils');
 const chai = require('chai');
 
+function toPgTable(schema, table) {
+    return schema + '.' + table.replace(/ /,'_');
+}
+
 async function clearAirtableTable(schema, base, table) {
-    const ids = (await pool.query(`select id from ${schema}.${table}`)).rows;
+    const ids = (await pool.query(`select id from ${toPgTable(schema,table)}`)).rows;
     for (let i in ids) {
         await base(table).destroy(ids[i].id);
     }
