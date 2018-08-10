@@ -13,9 +13,10 @@ class AirtableRest {
         this.config = config;
         this.base = new Airtable({ apiKey: config.apiKey }).base(config.base);
         this.onChangeHooks = [];
-        this.onSelectHooks = [_.identity];
+        this.onSelectHooks = [(user, res) => res];
         this.schema = this.config.schema;
         this.sync = new Syncronizer(config, this.onChangeHooks);
+        this.assignUser = _.identity;
     }
 
     setupPeriodicUpdate() {
@@ -27,14 +28,15 @@ class AirtableRest {
             throw new Error(`Table ${table} not available`);
     }
 
-    prepareResult(entity) {
+    prepareResult(user, entity) {
         const convertedKeys = _.mapKeys(entity, (v, k) => _.camelCase(k));
-        const appliedHooks = _.reduce(this.onSelectHooks, (result, fn) => fn(result), convertedKeys);
+        const appliedHooks = _.reduce(this.onSelectHooks, (result, fn) => fn(user, result), convertedKeys);
         return appliedHooks;
     }
 
     async listRecords(req, res) {
         const table = req.params.table;
+        const user = this.assignUser(req);
 
         this.validateTable(table);
 
@@ -44,7 +46,7 @@ class AirtableRest {
         const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
         console.log(query);
         const result = await pool.query(query);
-        res.json({ records: _.map(result.rows, this.prepareResult.bind(this)) });
+        res.json({ records: _.map(result.rows, this.prepareResult.bind(this, user)) });
     }
 
     async createRecord(req, res) {
@@ -59,13 +61,15 @@ class AirtableRest {
 
     async retrieveRecord(req, res) {
         const table = req.params.table;
+        const user = this.assignUser(req);
+
         const id = req.params.id;
 
         this.validateTable(table)
 
         const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE id=${id}`;
         const result = await pool.query(query);
-        res.json(prepareResult(result.rows[0]));
+        res.json(prepareResult(user, result.rows[0]));
     }
 
     async deleteRecord() {
@@ -86,6 +90,10 @@ class AirtableRest {
 
     onSelect(handler) {
         this.onSelectHooks.push(handler);
+    }
+
+    onAssignUser(handler) {
+        this.assignUser = handler;
     }
 }
 

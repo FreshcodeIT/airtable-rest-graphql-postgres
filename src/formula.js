@@ -1,54 +1,52 @@
-const esprima = require('esprima');
 const _ = require('lodash');
+const peg = require("pegjs");
+const fs = require('fs');
+
+const parser = peg.generate(fs.readFileSync('./src/airtable.peg', 'utf8'), {cache: true});
 
 // TODO : allow only Aritable functions(can check by requesting list of functions from schema)
 
-function treeToSql({ type, body, callee, arguments, name, raw, expression, operator, left, right, value}) {
-    switch (type) {
-        case 'Program':
-            return treeToSql(_.last(body));
-        case 'ExpressionStatement':
-            return treeToSql(expression);
-        case 'CallExpression':
-            const sqlArguments = _.map(arguments, treeToSql);
-            switch (callee.name) {
-                case 'AND':
-                    return `(${sqlArguments.join(' AND ')})`;
-                case 'OR':
-                    return `(${sqlArguments.join(' OR ')})`;
-                case 'RECORD_ID':
-                    return `id`;
-                case 'IF':
-                    return `CASE (${sqlArguments[0]}) 
-                            WHEN TRUE THEN (${sqlArguments[1]})
-                            ${sqlArguments[2] ? `ELSE (${sqlArguments[2]})` : ''}
-                            END`
-                default:
-                    return `(${callee.name}(${sqlArguments.join(',')}))`;
-            }
-        case 'BinaryExpression':
-            switch (operator) {
-                case '==':
-                    return `((${treeToSql(left)})=(${treeToSql(right)}))`;
-                default:
-                    return `((${treeToSql(left)}) ${operator} (${treeToSql(right)}))`;
-            }
-            return;
-        case 'Identifier':
-            return `fields->>'${name}'`;
-        case 'Literal':
-            if (value.startsWith('={') && value.endsWith('}='))
-                return `fields->>'${value.replace('={','').replace('}=','')}'`
-            return raw;
+function treeToSql({ binop, fun, args, left, right, variable, str, num, opType, resType }) {
+    if (fun) {
+        const sqlArguments = _.map(args, treeToSql);
+        switch (fun) {
+            case 'and':
+                return `(${sqlArguments.join(' AND ')})`;
+            case 'or':
+                return `(${sqlArguments.join(' OR ')})`;
+            case 'record_id':
+                return `id`;
+            case 'if':
+                return `CASE (${sqlArguments[0]}) 
+                    WHEN TRUE THEN (${sqlArguments[1]})
+                    ${sqlArguments[2] ? `ELSE (${sqlArguments[2]})` : ''}
+                    END`
+            default:
+                return `(${fun}(${sqlArguments.join(',')}))`;
+        }
+    }
+    else if (binop) {
+        const sqlOp = binop == '&' ? '||' : binop;
+        return `((${treeToSql(left)}) ${sqlOp} (${treeToSql(right)}))`;
+    }
+    else if (variable) {
+        return `fields->'${variable}'`;
+    }
+    else if (str) {
+        return `'${str}'`;
+    }
+    else if (num) {
+        return num;
     }
 }
 
 function formulaToSql(formula) {
     if (formula) {
-        // TODO : create speicific parser for Airtable formulas
-        formula = formula.replace('=', '==').replace('{','"={').replace('}','}="');
         console.log("Formula:" + formula);
-        return `${treeToSql(esprima.parse(formula))}::boolean`;
+        console.time("parseTime");
+        const parsedTree = parser.parse(formula.trim());
+        console.timeEnd("parseTime");
+        return `${treeToSql(parsedTree)}::boolean`;
     }
     else
         return "TRUE";

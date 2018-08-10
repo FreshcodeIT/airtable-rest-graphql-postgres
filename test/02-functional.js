@@ -22,6 +22,11 @@ describe('Properties', function () {
             return selectAndCompareLocalAndRemote(server, `/Property?filterByFormula={Single select}%3D'yes'&sort[0][field]=Name&sort[0][direction]=asc`);
         });
     });
+    describe('/GET All Properties Greater or equals', () => {
+        it('it should GET all the Properties', () => {
+            return selectAndCompareLocalAndRemote(server, `/Property?filterByFormula=%7BExtra+price(rollup)%7D%3E%3D10&sort[0][field]=Name&sort[0][direction]=asc`);
+        });
+    });
     describe('/POST New property', () => {
         it('it should Post property which should arrive both in local and remote repository', async () => {
             const cities = await getEntitiesAsMap('target.City_name', 'Name');

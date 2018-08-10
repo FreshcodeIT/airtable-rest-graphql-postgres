@@ -1,4 +1,4 @@
-const config = require('config');
+const config = require('../config/test');
 const _ = require('lodash');
 const restore = require('../src/restore');
 const airql = require('../index');

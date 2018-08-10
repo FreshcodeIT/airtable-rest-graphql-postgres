@@ -1,0 +1,68 @@
+{
+  function extractList(list, index) {
+    return list.map(function(element) { return element[index]; });
+  }
+
+  function buildList(head, tail, index) {
+    return [head].concat(extractList(tail, index));
+  }
+  
+  function binop(op,left,right) {
+    return {binop:op, left: left, right: right}; 
+  }
+}
+
+start = equality
+
+funcall = funname:fun "(" args:arguments ")" {return {fun:funname.toLowerCase(), args: args}};
+
+arguments
+  = head:start tail:(_ "," _ start)* {return buildList(head, tail, 3);}
+  / _
+
+equality = left:relational _ op:eq _ right:equality { return binop(op,left,right) } 
+  / relational
+  
+relational = left:concat _ op:rel _ right:relational { return binop(op,left,right) } 
+  / concat
+  
+concat = left:additive _ op:cat _ right:concat { return binop(op,left,right) } 
+  / additive
+
+additive
+  = left:multiplicative _ op:add _ right:additive { return binop(op,left,right) }
+  / multiplicative
+
+multiplicative
+  = left:primary _ op:mul _ right:multiplicative { return binop(op,left,right) }
+  / primary
+
+primary
+  = integer
+  / string
+  / funcall
+  / variable
+  / "(" parens:start ")" { return parens; }
+
+mul = "*" / "/" 
+add = "+" / "-" 
+cat = "&"
+rel = ">=" / "<=" / ">" / "<" 
+eq = "=" / "!="
+
+integer "integer" = digits:[0-9]+ { return {num: parseInt(digits.join(""), 10)} }
+fun "fun" = name:[a-zA-Z_]+ {return name.join("");}
+_ "whitespace" = [ \t\n\r]*
+
+string "string"
+  = '"' chars:doubleChar* '"' { return { str: chars.join("") };}
+  / "'" chars:singleChar* "'" { return { str: chars.join("") };}
+
+doubleChar = !('"' / "\\" ) . { return text(); }
+singleChar = !("'" / "\\" ) . { return text(); }
+
+variable "variable" 
+  = '{' name:[^}]+ '}' { return {variable: name.join("")} }
+  / name:[a-zA-Z_-]+ { return {variable: name.join("")} }
+
+
