@@ -7,8 +7,8 @@
     return [head].concat(extractList(tail, index));
   }
   
-  function binop(op,left,right) {
-    return {binop:op, left: left, right: right}; 
+  function binop(op,left,right,type) {
+    return {binop:op, left: left, right: right, type: type}; 
   }
 }
 
@@ -20,21 +20,21 @@ arguments
   = head:start tail:(_ "," _ start)* {return buildList(head, tail, 3);}
   / _
 
-equality = left:relational _ op:eq _ right:equality { return binop(op,left,right) } 
+equality = left:relational _ op:eq _ right:equality { return binop(op,left,right,'rel') } 
   / relational
   
-relational = left:concat _ op:rel _ right:relational { return binop(op,left,right) } 
+relational = left:concat _ op:rel _ right:relational { return binop(op,left,right,'rel') } 
   / concat
   
-concat = left:additive _ op:cat _ right:concat { return binop(op,left,right) } 
+concat = left:additive _ op:cat _ right:concat { return binop(op,left,right,'str') } 
   / additive
 
 additive
-  = left:multiplicative _ op:add _ right:additive { return binop(op,left,right) }
+  = left:multiplicative _ op:add _ right:additive { return binop(op,left,right,'math') }
   / multiplicative
 
 multiplicative
-  = left:primary _ op:mul _ right:multiplicative { return binop(op,left,right) }
+  = left:primary _ op:mul _ right:multiplicative { return binop(op,left,right,'math') }
   / primary
 
 primary

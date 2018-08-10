@@ -2,11 +2,11 @@ const _ = require('lodash');
 const peg = require("pegjs");
 const fs = require('fs');
 
-const parser = peg.generate(fs.readFileSync('./src/airtable.peg', 'utf8'), {cache: true});
+const parser = peg.generate(fs.readFileSync('./src/airtable.peg', 'utf8'), { cache: true });
 
 // TODO : allow only Aritable functions(can check by requesting list of functions from schema)
 
-function treeToSql({ binop, fun, args, left, right, variable, str, num, opType, resType }) {
+function treeToSql({ binop, fun, args, left, right, variable, str, num, type }) {
     if (fun) {
         const sqlArguments = _.map(args, treeToSql);
         switch (fun) {
@@ -26,14 +26,18 @@ function treeToSql({ binop, fun, args, left, right, variable, str, num, opType, 
         }
     }
     else if (binop) {
-        const sqlOp = binop == '&' ? '||' : binop;
-        return `((${treeToSql(left)}) ${sqlOp} (${treeToSql(right)}))`;
+        if (type === 'str') {
+            return `((${treeToSql(left)}) || (${treeToSql(right)}))`;
+        }
+        else {
+            return `JSON_BINOP('${type}','${binop}',${treeToSql(left)}::text, ${treeToSql(right)}::text)`
+        }
     }
     else if (variable) {
-        return `fields->'${variable}'`;
+        return `fields->>'${variable}'`;
     }
     else if (str) {
-        return `'${str}'`;
+        return `'${str}'::text`;
     }
     else if (num) {
         return num;
