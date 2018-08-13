@@ -11,13 +11,17 @@ function treeToSql({ binop, fun, args, left, right, variable, str, num, type }) 
         const sqlArguments = _.map(args, treeToSql);
         switch (fun) {
             case 'and':
-                return `(${sqlArguments.join(' AND ')})`;
+                return `(${sqlArguments.map(arg => `${arg}::boolean`).join(' AND ')})`;
             case 'or':
-                return `(${sqlArguments.join(' OR ')})`;
+                return `(${sqlArguments.map(arg => `${arg}::boolean`).join(' OR ')})`;
+            case 'true':
+                return `true`;
+            case 'false':
+                return `false`;
             case 'record_id':
                 return `id`;
             case 'if':
-                return `CASE (${sqlArguments[0]}) 
+                return `CASE (${sqlArguments[0]}::boolean) 
                     WHEN TRUE THEN (${sqlArguments[1]})
                     ${sqlArguments[2] ? `ELSE (${sqlArguments[2]})` : ''}
                     END`
@@ -47,9 +51,7 @@ function treeToSql({ binop, fun, args, left, right, variable, str, num, type }) 
 function formulaToSql(formula) {
     if (formula) {
         console.log("Formula:" + formula);
-        console.time("parseTime");
         const parsedTree = parser.parse(formula.trim());
-        console.timeEnd("parseTime");
         return `${treeToSql(parsedTree)}::boolean`;
     }
     else
@@ -65,3 +67,5 @@ function sortToSql(fields) {
 }
 
 module.exports = { formulaToSql, sortToSql };
+
+

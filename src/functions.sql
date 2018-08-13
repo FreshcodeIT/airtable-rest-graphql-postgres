@@ -1,3 +1,17 @@
+CREATE OR REPLACE FUNCTION is_valid_json(p_json text)
+  RETURNS BOOLEAN
+AS
+$$
+BEGIN
+  return (p_json::json is not null);
+exception 
+  when others then
+     return false;  
+END;
+$$
+LANGUAGE PLPGSQL
+IMMUTABLE;
+
 CREATE OR REPLACE FUNCTION ARRAYUNIQUE(data text) RETURNS jsonb
     AS $$ SELECT jsonb_agg(distinct elem) FROM jsonb_array_elements(data::jsonb) elem $$
     LANGUAGE SQL
@@ -41,6 +55,10 @@ CASE
    CASE 
     WHEN leftOp ~ '^\d+(.\d+)?$' AND rightOp ~ '^\d+(.\d+)?$' THEN 
         EXECUTE format('SELECT ($1 %s $2)::integer', op) USING leftOp::integer, rightOp::integer INTO result;
+    WHEN is_valid_json(leftOp) AND jsonb_typeof(leftOp::jsonb)='array' THEN
+        EXECUTE format('SELECT ($1 %s $2)::integer', op) USING ARRAYJOIN(leftOp, ','), rightOp::text INTO result;
+    WHEN is_valid_json(rightOp) AND jsonb_typeof(rightOp::jsonb)='array' THEN
+        EXECUTE format('SELECT ($1 %s $2)::integer', op) USING leftOp::text, ARRAYJOIN(rightOp, ',') INTO result;
     ELSE 
         EXECUTE format('SELECT ($1 %s $2)::integer', op) USING leftOp::text, rightOp::text INTO result;
   END CASE;
