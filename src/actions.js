@@ -67,9 +67,9 @@ class AirtableRest {
 
         this.validateTable(table)
 
-        const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE id=${id}`;
+        const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE id='${id}'`;
         const result = await pool.query(query);
-        res.json(prepareResult(user, result.rows[0]));
+        res.json(this.prepareResult(user, result.rows[0]));
     }
 
     async deleteRecord() {

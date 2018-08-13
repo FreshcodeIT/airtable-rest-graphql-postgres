@@ -1,6 +1,6 @@
 {
   "name": "airtable-postgres-graphql",
-  "version": "0.5.4",
+  "version": "0.5.5",
   "dependencies": {
     "airtable": "^0.5.6",
     "express": "^4.16.3",
