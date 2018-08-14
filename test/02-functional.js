@@ -9,7 +9,7 @@ function checkEqual(filter, maxRecords) {
 
 // TODO : use Airtable.js with custom endpoint
 // You can use https://codepen.io/airtable/full/rLKkYB to create proper Airtable API URL
-describe.only('Properties', function () {
+describe('Properties', function () {
     this.timeout(5000);
     before(async () => {
         await clearPostgresTable('Property');
@@ -55,6 +55,11 @@ describe.only('Properties', function () {
         it('it should get by Latitude field', () => {
             return checkEqual(`{Latitude lookup}>1.00000001`);
         })
+    } );
+    describe('/GET filter by number lookup field(Latitude) negative', () => {
+        it('it should get by Latitude field negative', () => {
+            return checkEqual(`{Latitude lookup}<-1.00000000`);
+        })
     } )
     describe('/POST New property', () => {
         it('it should Post property which should arrive both in local and remote repository', async () => {
@@ -62,7 +67,7 @@ describe.only('Properties', function () {
             const features = await getEntitiesAsMap('target.Feature', 'Name');
             let property = {
                 fields: {
-                    "Name": "Some property",
+                    "Name": "Some property" + new Date(),
                     "City": [
                         cities.London
                     ],

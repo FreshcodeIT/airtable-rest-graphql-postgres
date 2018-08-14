@@ -50,7 +50,7 @@ cat = "&"
 rel = ">=" / "<=" / ">" / "<" 
 eq = "=" / "!="
 
-integer "integer" = digits:[0-9.]+ { return {num: digits.join('')} }
+integer "integer" = digits:[-0-9.]+ { return {num: digits.join('')} }
 fun "fun" = name:[a-zA-Z_]+ {return name.join("");}
 _ "whitespace" = [ \t\n\r]*
 

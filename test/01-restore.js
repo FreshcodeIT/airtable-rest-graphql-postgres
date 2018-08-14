@@ -7,11 +7,11 @@ const { pool } = require('./utils');
 const chai = require('chai');
 
 function toPgTable(schema, table) {
-    return schema + '.' + table.replace(/ /,'_');
+    return schema + '.' + table.replace(/ /, '_');
 }
 
 async function clearAirtableTable(schema, base, table) {
-    const ids = (await pool.query(`select id from ${toPgTable(schema,table)}`)).rows;
+    const ids = (await pool.query(`select id from ${toPgTable(schema, table)}`)).rows;
     for (let i in ids) {
         await base(table).destroy(ids[i].id);
     }
@@ -36,7 +36,10 @@ function embedValues(allEntities, root) {
                         }
                         return v;
                     });
-                    ent[key] = _.sortBy(ent[key], 'Name');
+                    if (_.every(ent[key], 'Name'))
+                        ent[key] = _.sortBy(ent[key], 'Name');
+                    else
+                        ent[key] = ent[key].sort();
                 }
             }));
     } while (embedded);

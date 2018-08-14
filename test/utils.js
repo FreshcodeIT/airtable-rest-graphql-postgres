@@ -25,8 +25,12 @@ function selectAndCompareLocalAndRemote(server, url) {
             chai.request(`https://api.airtable.com/v0/${config.base}`).get(url).set('Authorization', `Bearer ${config.apiKey}`)
         ])
         .then(([local, airtable]) => {
-            chai.expect(local.body.records).to.be.deep.equal(airtable.body.records);
-            chai.expect(local.body.records.length).to.not.equal(0);
+            const nameField = 'fields.Name';
+            const localRecords = _.sortBy(local.body.records, nameField);
+            const airtableRecords = _.sortBy(airtable.body.records, nameField);
+            chai.expect(_.map(localRecords, nameField)).to.be.deep.equal(_.map(airtableRecords, nameField));
+            chai.expect(localRecords).to.be.deep.equal(airtableRecords);
+            chai.expect(localRecords.length).to.not.equal(0);
             return [local, airtable];
         });
 }
