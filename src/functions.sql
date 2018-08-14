@@ -80,3 +80,15 @@ END CASE;
 RETURN result;
 END;
 $_$;
+
+CREATE OR REPLACE FUNCTION IS_BEFORE(first_date text, second_date text) RETURNS BOOLEAN
+    AS $$ SELECT first_date <= second_date $$
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;
+
+CREATE OR REPLACE FUNCTION IS_SAME(first_date text, second_date text) RETURNS BOOLEAN
+    AS $$ SELECT first_date = second_date $$
+    LANGUAGE SQL
+    IMMUTABLE
+    RETURNS NULL ON NULL INPUT;
