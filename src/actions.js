@@ -72,8 +72,12 @@ class AirtableRest {
         res.json(this.prepareResult(user, result.rows[0]));
     }
 
-    async deleteRecord() {
-
+    async deleteRecord(req, res) {
+        const table = req.params.table;
+        const id = req.params.id;
+        const result = await this.base(table).destroy(id);
+        await this.sync.syncTable(table);
+        res.json({deleted: true, id: result.id});
     }
 
     async updateRecord(req, res) {
