@@ -44,7 +44,7 @@ function treeToSql({ binop, fun, args, left, right, variable, str, num, type }) 
         return `'${str}'::text`;
     }
     else if (num) {
-        return num;
+        return `(${num})`;
     }
 }
 
