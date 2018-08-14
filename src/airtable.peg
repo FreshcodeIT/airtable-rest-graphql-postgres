@@ -50,7 +50,7 @@ cat = "&"
 rel = ">=" / "<=" / ">" / "<" 
 eq = "=" / "!="
 
-integer "integer" = digits:[0-9]+ { return {num: parseInt(digits.join(""), 10)} }
+integer "integer" = digits:[0-9.]+ { return {num: digits.join('')} }
 fun "fun" = name:[a-zA-Z_]+ {return name.join("");}
 _ "whitespace" = [ \t\n\r]*
 
@@ -64,5 +64,3 @@ singleChar = !("'" / "\\" ) . { return text(); }
 variable "variable" 
   = '{' name:[^}]+ '}' { return {variable: name.join("")} }
   / name:[a-zA-Z_-]+ { return {variable: name.join("")} }
-
-

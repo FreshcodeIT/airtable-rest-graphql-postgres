@@ -127,7 +127,7 @@ describe('Restore', async function () {
     it('destination table should be empty', async () => {
         for (let i in tables) {
             const result = (await destinationAirtableApi(tables[i]).select({}).firstPage());
-            chai.expect(result.length == 0).to.be.true;
+            chai.expect(result.length).to.equal(0);
         }
     });
 

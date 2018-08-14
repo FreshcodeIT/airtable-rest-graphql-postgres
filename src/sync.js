@@ -18,7 +18,7 @@ class Syncronizer {
     }
 
     toPgTable(table) {
-        return this.schema + '.' + table.replace(/ /,'_');
+        return this.schema + '.' + table.replace(/ /, '_');
     }
 
     async createFunctions() {
@@ -39,9 +39,10 @@ class Syncronizer {
         }
     }
 
-    runChangeHooks(eventType, entities) {
+    runChangeHooks(entityName, currentState, eventType, entities) {
+        const currentStateById = _.keyBy(currentState, 'id');
         _.forEach(entities, (entity) => {
-            _.forEach(this.changeHooks || [], (hook) => hook(eventType, entity));
+            _.forEach(this.changeHooks || [], (hook) => hook(entityName, eventType, currentStateById[entity.id] || {}, entity));
         })
     }
 
@@ -66,7 +67,7 @@ class Syncronizer {
                 if (error)
                     return reject(error);
 
-                const currentState = (await pool.query(`SELECT id,hash FROM ${pgTable} ${id && 'WHERE id=$1'}`, _.compact([id]))).rows;
+                const currentState = (await pool.query(`SELECT id,fields,hash FROM ${pgTable} ${id && 'WHERE id=$1'}`, _.compact([id]))).rows;
                 const added = _.differenceBy(allValues, currentState, 'id');
                 const deleted = _.differenceBy(currentState, allValues, 'id');
                 const changed = _(allValues)
@@ -81,9 +82,9 @@ class Syncronizer {
 
                 await Promise.all(_.flattenDeep([addedP, deletedP, changedP]));
 
-                runChangeHooks('insert', added);
-                runChangeHooks('update', changed);
-                runChangeHooks('delte', deleted);
+                runChangeHooks(table, currentState, 'insert', added);
+                runChangeHooks(table, currentState, 'update', changed);
+                runChangeHooks(table, currentState, 'delte', deleted);
 
                 console.log(`${table} (Added: ${added.length}, Changed: ${changed.length}, Deleted: ${deleted.length})`);
 

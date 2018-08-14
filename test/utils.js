@@ -26,7 +26,7 @@ function selectAndCompareLocalAndRemote(server, url) {
         ])
         .then(([local, airtable]) => {
             chai.expect(local.body.records).to.be.deep.equal(airtable.body.records);
-            chai.expect(local.body.records.length > 0).to.be.true;
+            chai.expect(local.body.records.length).to.not.equal(0);
             return [local, airtable];
         });
 }

@@ -28,6 +28,13 @@ airtable.onChange((event, entity) => {
     }
 });
 
+airtable.onChange((type, event, old, new) => {
+    if (event=='update' && old['Approve status']!=new['Approve status'])
+    {
+        checkApproval(JSON.parse(new['Approve status']), json);
+    }
+})
+
 airtable.onSelect((user, entity) => {
     // user select info about himself
     if (user.airtableId === entity.id)
@@ -40,6 +47,8 @@ airtable.onSelect((user, entity) => {
             return _.pick(entity, ['Name', 'MobilePhone']);
     }
 });
+
+airtable.onAssignUser((req, res) => req.local.user);
 ```
 
 # Benchmarks

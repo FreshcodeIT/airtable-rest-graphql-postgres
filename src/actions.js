@@ -36,7 +36,7 @@ class AirtableRest {
 
     async listRecords(req, res) {
         const table = req.params.table;
-        const user = this.assignUser(req);
+        const user = this.assignUser(req, res);
 
         this.validateTable(table);
 
@@ -61,7 +61,7 @@ class AirtableRest {
 
     async retrieveRecord(req, res) {
         const table = req.params.table;
-        const user = this.assignUser(req);
+        const user = this.assignUser(req, res);
 
         const id = req.params.id;
 

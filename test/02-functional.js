@@ -9,10 +9,9 @@ function checkEqual(filter, maxRecords) {
 
 // TODO : use Airtable.js with custom endpoint
 // You can use https://codepen.io/airtable/full/rLKkYB to create proper Airtable API URL
-describe('Properties', function () {
+describe.only('Properties', function () {
     this.timeout(5000);
     before(async () => {
-        // TODO make sure that state before each test remains the same(sync, restore from db, rollback transaction)
         await clearPostgresTable('Property');
         await airtable.setupPeriodicUpdate();
     });
@@ -50,6 +49,11 @@ describe('Properties', function () {
     describe('/GET complex AND formula', () => {
         it('it should get by complex AND formula', () => {
             return checkEqual(`{Extra price(rollup)}>=10`);
+        })
+    } );
+    describe('/GET filter by number lookup field(Latitude)', () => {
+        it('it should get by Latitude field', () => {
+            return checkEqual(`{Latitude lookup}>1.00000001`);
         })
     } )
     describe('/POST New property', () => {
@@ -104,8 +108,8 @@ describe('Properties', function () {
 
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { Name: newName, City: [cities.Zaporozhye] } });
             const [localZp] = await checkEqual(`RECORD_ID()='${id}'`);
-            chai.expect(localZp.body.records[0].fields.Name == newName).to.be.true;
-            chai.expect(localZp.body.records[0].fields.CityLookup[0] == 'Zaporozhye').to.be.true;
+            chai.expect(localZp.body.records[0].fields.Name).to.equal(newName);
+            chai.expect(localZp.body.records[0].fields.CityLookup[0]).to.equal('Zaporozhye');
         });
 
         it('Change City one more time to ensure that Lookup field is also changed', async () => {
@@ -114,7 +118,7 @@ describe('Properties', function () {
 
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { City: [cities.London] } });
             const [localLondon] = await checkEqual(`RECORD_ID()='${id}'`);
-            chai.expect(localLondon.body.records[0].fields.CityLookup[0] == 'London').to.be.true;
+            chai.expect(localLondon.body.records[0].fields.CityLookup[0]).to.equal('London');
         });
     });
 

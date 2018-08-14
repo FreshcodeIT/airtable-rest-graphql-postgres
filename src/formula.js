@@ -1,9 +1,8 @@
 const _ = require('lodash');
 const peg = require("pegjs");
 const fs = require('fs');
-const path = require('path')
 
-const parser = peg.generate(fs.readFileSync(path.resolve(__dirname, 'airtable.peg'), 'utf8'), { cache: true });
+const parser = peg.generate(fs.readFileSync('./src/airtable.peg', 'utf8'), { cache: true });
 
 // TODO : allow only Aritable functions(can check by requesting list of functions from schema)
 
