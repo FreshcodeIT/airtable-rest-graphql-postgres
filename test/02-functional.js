@@ -109,7 +109,7 @@ describe('Properties', function () {
 
         it('change Property name and City(CityLookup also should change)', async () => {
             const cities = await getEntitiesAsMap('target.City_name', 'Name');
-            const id = (await getEntitiesAsMap('target.Property', 'Name'))['21 Liverpool Street, London, UK'];
+            const id = (await getEntitiesAsMap('target.Property', 'Name'))['Property #1'];
 
             await chai.request(server).patch(`/Property/${id}`).send({ fields: { Name: newName, City: [cities.Zaporozhye] } });
             const [localZp] = await checkEqual(`RECORD_ID()='${id}'`);

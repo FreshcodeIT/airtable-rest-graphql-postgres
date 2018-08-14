@@ -60,13 +60,13 @@ CASE
     WHEN leftOp='' AND rightOp='' THEN result:=0;
     WHEN leftOp='' THEN result:=rightOp;
     WHEN rightOp='' THEN result:=leftOp;
-    WHEN leftOp ~ '^\d+(.\d+)?$' AND rightOp ~ '^\d+(.\d+)?$' THEN 
+    WHEN leftOp ~ '^-?\d+(.\d+)?$' AND rightOp ~ '^-?\d+(.\d+)?$' THEN 
         EXECUTE format('SELECT $1 %s $2', op) USING leftOp::numeric, rightOp::numeric INTO result;
   END CASE;
 
   when type='rel' THEN
    CASE 
-    WHEN leftOp ~ '^\d+(.\d+)?$' AND rightOp ~ '^\d+(.\d+)?$' THEN 
+    WHEN leftOp ~ '^-?\d+(.\d+)?$' AND rightOp ~ '^-?\d+(.\d+)?$' THEN 
         EXECUTE format('SELECT ($1 %s $2)::integer', op) USING leftOp::numeric, rightOp::numeric INTO result;
     WHEN is_valid_json(leftOp) AND jsonb_typeof(leftOp::jsonb)='array' THEN
         SELECT JSON_BINOP(type,op,ARRAYJOIN(leftOp, ','),rightOp) INTO result;
