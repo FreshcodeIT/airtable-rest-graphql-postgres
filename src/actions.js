@@ -37,16 +37,19 @@ class AirtableRest {
     async listRecords(req, res) {
         const table = req.params.table;
         const user = this.assignUser(req, res);
-
+    
         this.validateTable(table);
 
-        const limit = parseInt(req.query.maxRecords) || 100;
+        const pageSize = parseInt(req.query.pageSize) || 100;
+        const offset = parseInt(req.query.offset) || 0;
         const filter = formulaToSql(req.query.filterByFormula);
         const sort = sortToSql(req.query.sort);
-        const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE ${filter} ORDER BY ${sort} LIMIT ${limit}`;
+        const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE ${filter} ORDER BY ${sort} LIMIT ${pageSize+1} OFFSET ${offset}`;
         console.log(query);
-        const result = await pool.query(query);
-        res.json({ records: _.map(result.rows, this.prepareResult.bind(this, user)) });
+        const result = (await pool.query(query)).rows;
+        const moreRecords = result.length > pageSize;
+        const skipFirstRecords = moreRecords ? _.initial : _.identity;
+        res.json({ records: _.map(skipFirstRecords(result), this.prepareResult.bind(this, user)), offset: moreRecords ? (pageSize + offset) : null});
     }
 
     async createRecord(req, res) {

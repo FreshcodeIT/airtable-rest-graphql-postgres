@@ -21,7 +21,7 @@ async function clearAirtableBase(apiKey, baseId, entities) {
 function selectAndCompareLocalAndRemote(server, url) {
     return Promise
         .all([
-            chai.request(server).get(url),
+            chai.request(server).get(`/v0/${config.base}/${url}`),
             chai.request(`https://api.airtable.com/v0/${config.base}`).get(url).set('Authorization', `Bearer ${config.apiKey}`)
         ])
         .then(([local, airtable]) => {
@@ -45,6 +45,10 @@ async function getEntitiesAsMap(table, groupKey) {
     return _.fromPairs(_.map(result, (ent) => [ent.fields[groupKey], ent.id]));
 }
 
+async function getEntitiesCount(table) {
+    return parseInt((await pool.query(`select count(*) as cnt from ${table}`)).rows[0].cnt);
+}
+
 process.on('unhandledRejection', e => { throw e; });
 
-module.exports = {clearAirtableBase, clearPostgresTable, selectAndCompareLocalAndRemote, getSingleEntity, pool, getEntitiesAsMap};
+module.exports = {clearAirtableBase, clearPostgresTable, selectAndCompareLocalAndRemote, getSingleEntity, pool, getEntitiesAsMap, getEntitiesCount};

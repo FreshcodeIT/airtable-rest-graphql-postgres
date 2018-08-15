@@ -12,6 +12,6 @@ app.use(bodyParser.json({ type: 'application/json' }));
 
 let {router, airtable} = airql.airtableRestRouter(require('../config/test'));
 
-app.use('/', router);
+app.use('/v0/appi7MJY9TJIqNNJj', router);
 
 module.exports = {server: app, airtable}; 
