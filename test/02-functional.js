@@ -2,6 +2,7 @@ let chai = require('chai');
 
 let { server, airtable } = require('./rest');
 let { clearPostgresTable, selectAndCompareLocalAndRemote, getEntitiesAsMap } = require('./utils');
+let config = require('../config/test');
 
 function checkEqual(filter, maxRecords) {
     return selectAndCompareLocalAndRemote(server, `/Property?maxRecords=${maxRecords || 100}&view=Grid%20view&filterByFormula=${encodeURIComponent(filter)}&sort[0][field]=Name&sort[0][direction]=asc`);
@@ -79,7 +80,7 @@ describe('Properties', function () {
                     "Single select": "yes"
                 }
             };
-            const result = await chai.request(server).post('/Property').send(property);
+            const result = await chai.request(server).post(`/v0/${config.base}/Property`).send(property);
             return checkEqual(`RECORD_ID()='${result.body.id}'`);
         });
     });
@@ -111,7 +112,7 @@ describe('Properties', function () {
             const cities = await getEntitiesAsMap('target.City_name', 'Name');
             const id = (await getEntitiesAsMap('target.Property', 'Name'))['Property #1'];
 
-            await chai.request(server).patch(`/Property/${id}`).send({ fields: { Name: newName, City: [cities.Zaporozhye] } });
+            await chai.request(server).patch(`/v0/${config.base}/Property/${id}`).send({ fields: { Name: newName, City: [cities.Zaporozhye] } });
             const [localZp] = await checkEqual(`RECORD_ID()='${id}'`);
             chai.expect(localZp.body.records[0].fields.Name).to.equal(newName);
             chai.expect(localZp.body.records[0].fields.CityLookup[0]).to.equal('Zaporozhye');
@@ -121,7 +122,7 @@ describe('Properties', function () {
             const cities = await getEntitiesAsMap('target.City_name', 'Name');
             const id = (await getEntitiesAsMap('target.Property', 'Name'))[newName];
 
-            await chai.request(server).patch(`/Property/${id}`).send({ fields: { City: [cities.London] } });
+            await chai.request(server).patch(`/v0/${config.base}/Property/${id}`).send({ fields: { City: [cities.London] } });
             const [localLondon] = await checkEqual(`RECORD_ID()='${id}'`);
             chai.expect(localLondon.body.records[0].fields.CityLookup[0]).to.equal('London');
         });

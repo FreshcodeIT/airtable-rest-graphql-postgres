@@ -9,7 +9,7 @@ server.listen(5000);
 
 let base = new Airtable({ apiKey: config.apiKey, endpointUrl: 'http://localhost:5000' }).base(config.base);
 
-describe.only('Paging offset API', function () {
+describe('Paging offset API', function () {
     this.timeout(5000);
     describe('/GET list of all properties', () => {
         it('it should get each page from the list', (done) => {

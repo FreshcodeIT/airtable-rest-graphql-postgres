@@ -1,6 +1,7 @@
 let chai = require('chai');
 let sinon = require('sinon');
 let _ = require('lodash');
+let config = require('../config/test');
 
 let { server, airtable } = require('./rest');
 let { clearPostgresTable, getEntitiesAsMap } = require('./utils');
@@ -36,7 +37,7 @@ describe('Hooks', function () {
                     "Single select": "yes"
                 }
             };
-            await chai.request(server).post('/Property').send(property);
+            await chai.request(server).post(`/v0/${config.base}/Property/`).send(property);
             chai.assert(callbackSpy.calledOnce);
             chai.assert(callbackSpy.calledWith('Property', 'insert', {}, sinon.match(property)));
         });
@@ -49,10 +50,10 @@ describe('Hooks', function () {
 
             const id = _.entries((await getEntitiesAsMap('target.Property', 'Name')))[0][1];
 
-            const oldValue = (await chai.request(server).get(`/Property/${id}`)).body;
+            const oldValue = (await chai.request(server).get(`/v0/${config.base}/Property/${id}`)).body;
             const newProps = { fields: { Name: ("New name " + new Date().getTime()) } };
 
-            await chai.request(server).patch(`/Property/${id}`).send(newProps);
+            await chai.request(server).patch(`/v0/${config.base}/Property/${id}`).send(newProps);
 
             chai.assert(callbackSpy.calledOnce);
             chai.assert(callbackSpy.calledWith('Property', 'update', sinon.match.has('fields',sinon.match(oldValue.fields)), sinon.match.has('fields', sinon.match(_.assign({}, oldValue.fields, newProps.fields)))));
