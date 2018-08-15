@@ -19,7 +19,7 @@ describe('Properties', function () {
 
     describe('/GET All Properties', () => {
         it('it should GET all the Properties', () => {
-            return checkEqual(`AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))`);
+            return checkEqual(`AND(FIND('London',  ARRAYJOIN(CityLookup, ';')))`, 3);
         });
     });
     describe('/GET All Properties with Space in Field name', () => {

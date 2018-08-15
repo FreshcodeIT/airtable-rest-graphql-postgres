@@ -40,8 +40,14 @@ class AirtableRest {
     
         this.validateTable(table);
 
+        const maxRecords = parseInt(req.query.maxRecords);
         const pageSize = parseInt(req.query.pageSize) || 100;
         const offset = parseInt(req.query.offset) || 0;
+
+        if (maxRecords && (offset + pageSize) > maxRecords) {
+            pageSize = maxRecords - offset;
+        }
+
         const filter = formulaToSql(req.query.filterByFormula);
         const sort = sortToSql(req.query.sort);
         const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE ${filter} ORDER BY ${sort} LIMIT ${pageSize+1} OFFSET ${offset}`;
