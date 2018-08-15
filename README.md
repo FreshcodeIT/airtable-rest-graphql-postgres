@@ -35,11 +35,11 @@ airtable.onChange((type, event, old, new) => {
     }
 })
 
-airtable.onSelect((user, entity) => {
+airtable.onSelect((user, table, entity) => {
     // user select info about himself
     if (user.airtableId === entity.id)
         return entity;
-    switch(entity.__type) {
+    switch(table) {
         // don't return personal information, prefer Whitelist approach because field names in Airtable can be easily changed
         case 'Landlord':
             return _.pick(entity, ['Name', 'Type']);

@@ -28,9 +28,9 @@ class AirtableRest {
             throw new Error(`Table ${table} not available`);
     }
 
-    prepareResult(user, entity) {
+    prepareResult(user, table, entity) {
         const convertedKeys = _.mapKeys(entity, (v, k) => _.camelCase(k));
-        const appliedHooks = _.reduce(this.onSelectHooks, (result, fn) => fn(user, result), convertedKeys);
+        const appliedHooks = _.reduce(this.onSelectHooks, (result, fn) => fn(user, table, result), convertedKeys);
         return appliedHooks;
     }
 
@@ -55,7 +55,7 @@ class AirtableRest {
         const result = (await pool.query(query)).rows;
         const moreRecords = result.length > pageSize;
         const skipFirstRecords = moreRecords ? _.initial : _.identity;
-        res.json({ records: _.map(skipFirstRecords(result), this.prepareResult.bind(this, user)), offset: moreRecords ? (pageSize + offset) : null});
+        res.json({ records: _.map(skipFirstRecords(result), this.prepareResult.bind(this, user, table)), offset: moreRecords ? (pageSize + offset) : null});
     }
 
     async createRecord(req, res) {
