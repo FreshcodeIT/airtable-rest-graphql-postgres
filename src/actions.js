@@ -41,7 +41,7 @@ class AirtableRest {
         this.validateTable(table);
 
         const maxRecords = parseInt(req.query.maxRecords);
-        const pageSize = parseInt(req.query.pageSize) || 100;
+        let pageSize = parseInt(req.query.pageSize) || 100;
         const offset = parseInt(req.query.offset) || 0;
 
         if (maxRecords && (offset + pageSize) > maxRecords) {
