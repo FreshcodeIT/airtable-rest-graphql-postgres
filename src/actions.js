@@ -13,7 +13,7 @@ class AirtableRest {
         this.config = config;
         this.base = new Airtable({ apiKey: config.apiKey }).base(config.base);
         this.onChangeHooks = [];
-        this.onSelectHooks = [(user, res) => res];
+        this.onSelectHooks = [(user, table, res) => res];
         this.schema = this.config.schema;
         this.sync = new Syncronizer(config, this.onChangeHooks);
         this.assignUser = _.identity;
@@ -78,7 +78,7 @@ class AirtableRest {
 
         const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE id='${id}'`;
         const result = await pool.query(query);
-        res.json(this.prepareResult(user, result.rows[0]));
+        res.json(this.prepareResult(user, table, result.rows[0]));
     }
 
     async deleteRecord(req, res) {
