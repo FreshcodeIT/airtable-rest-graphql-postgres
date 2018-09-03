@@ -53,7 +53,7 @@ class Syncronizer {
         return new Promise((resolve, reject) => {
             const allValues = [];
             const filter = id ? { filterByFormula: `RECORD_ID()='${id}'` } : {};
-            this.base(table).select(filter).eachPage(function page(records, fetchNextPage) {
+            this.base(table).select(filter).eachPage((records, fetchNextPage) => {
                 records.forEach(function (record) {
                     allValues.push({
                         id: record.id,
@@ -63,9 +63,11 @@ class Syncronizer {
                     });
                 });
                 fetchNextPage();
-            }, async function done(error) {
-                if (error)
+            }, async error => {
+                if (error) {
+                    this.syncTable(table, id);
                     return reject(error);
+                }
 
                 const currentState = (await pool.query(`SELECT id,fields,hash FROM ${pgTable} ${id && 'WHERE id=$1'}`, _.compact([id]))).rows;
                 const added = _.differenceBy(allValues, currentState, 'id');
