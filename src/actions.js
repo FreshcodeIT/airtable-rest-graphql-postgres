@@ -74,11 +74,12 @@ class AirtableRest {
 
         const id = req.params.id;
 
-        this.validateTable(table)
+        this.validateTable(table);
 
         const query = `SELECT id,fields,created_time FROM ${this.sync.toPgTable(table)} WHERE id='${id}'`;
         const result = await pool.query(query);
-        res.json(this.prepareResult(user, table, result.rows[0]));
+        if (result.rows.length) res.json(this.prepareResult(user, table, result.rows[0]));
+        else res.status(404).send('Not found');
     }
 
     async deleteRecord(req, res) {

@@ -86,7 +86,7 @@ class Syncronizer {
 
                 runChangeHooks(table, currentState, 'insert', added);
                 runChangeHooks(table, currentState, 'update', changed);
-                runChangeHooks(table, currentState, 'delte', deleted);
+                runChangeHooks(table, currentState, 'delete', deleted);
 
                 console.log(`${table} (Added: ${added.length}, Changed: ${changed.length}, Deleted: ${deleted.length})`);
 
@@ -96,8 +96,12 @@ class Syncronizer {
     }
 
     async startSyncronization() {
-        for (var i in this.config.tables) {
-            await this.syncTable(this.config.tables[i]);
+        for (let i in this.config.tables) {
+            try {
+                await this.syncTable(this.config.tables[i]);
+            } catch (e) {
+                console.error(e);
+            }
         }
         if (process.env.NODE_ENV === 'production')
             setTimeout(this.startSyncronization.bind(this), 1000);
